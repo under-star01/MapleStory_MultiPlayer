@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RainDrop
+  m_Name: RainDrop(7)
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,14 +21,14 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: 7798372465852189690, guid: 49f1271bc74183944b944a869437a5fe, type: 3}
-    - time: 7
+      value: {fileID: 5636448063998030591, guid: 40b79dfa7909adb42b0b53cd7228e03d, type: 3}
+    - time: 6
       value: {fileID: -9212357685429792711, guid: 054d116a73ad1ae4ca0e6b8752b01beb, type: 3}
-    - time: 7.0833335
+    - time: 6.0833335
       value: {fileID: -2161667195266031745, guid: e027bf8aba645bf44af73ec3c3c2f729, type: 3}
-    - time: 7.1666665
+    - time: 6.1666665
       value: {fileID: -3762575545752847495, guid: bb870c98c0e5d6148b98f552e13c7a6b, type: 3}
-    - time: 7.25
+    - time: 6.25
       value: {fileID: -3775671880190903836, guid: 0c38cbaaf3fedbe4093060b7776c6d38, type: 3}
     attribute: m_Sprite
     path: 
@@ -52,7 +52,7 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: 7798372465852189690, guid: 49f1271bc74183944b944a869437a5fe, type: 3}
+    - {fileID: 5636448063998030591, guid: 40b79dfa7909adb42b0b53cd7228e03d, type: 3}
     - {fileID: -9212357685429792711, guid: 054d116a73ad1ae4ca0e6b8752b01beb, type: 3}
     - {fileID: -2161667195266031745, guid: e027bf8aba645bf44af73ec3c3c2f729, type: 3}
     - {fileID: -3762575545752847495, guid: bb870c98c0e5d6148b98f552e13c7a6b, type: 3}
@@ -62,7 +62,7 @@ AnimationClip:
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 7.3333335
+    m_StopTime: 6.3333335
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0

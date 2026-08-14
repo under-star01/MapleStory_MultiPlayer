@@ -6,7 +6,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: rain_0_1_0
+  m_Name: rain_0_1_1
   serializedVersion: 5
   m_AnimatorParameters: []
   m_AnimatorLayers:
@@ -42,7 +42,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: f0f1e950ffea5e346a126cfb944de425, type: 2}
+  m_Motion: {fileID: 7400000, guid: fa9e92388a4b54e4ea21f97df8f26f1a, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
