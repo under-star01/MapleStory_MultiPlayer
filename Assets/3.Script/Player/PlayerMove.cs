@@ -1,44 +1,94 @@
-using Mirror;
 using UnityEngine;
 
-public class PlayerMove : NetworkBehaviour
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(SpriteRenderer))]
+public class PlayerMove : MonoBehaviour
 {
-    [SerializeField]
-    private float moveSpeed = 3f;
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float jumpForce = 8f;
 
-    Animator animator;
-    SpriteRenderer sprite;
+    private Rigidbody2D rb;
+    private Animator animator;
+    private SpriteRenderer sprite;
+
+    private float moveInput;
+    private bool jumpInput;
+    private bool isGrounded;
+
+    private static readonly int IsWalk =
+        Animator.StringToHash("isWalk");
 
     private void Awake()
     {
+        rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         sprite = GetComponent<SpriteRenderer>();
     }
 
     private void Update()
     {
-        if (!isOwned)
-            return;
+        moveInput = Input.GetAxisRaw("Horizontal");
 
-        float x = Input.GetAxisRaw("Horizontal");
+        UpdateAnimation();
+        UpdateDirection();
 
-        transform.position +=
-            Vector3.right * x * moveSpeed * Time.deltaTime;
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+            jumpInput = true;
+    }
 
-        if(x > 0)
+    private void FixedUpdate()
+    {
+        rb.linearVelocity = new Vector2(
+            moveInput * moveSpeed,
+            rb.linearVelocity.y
+        );
+
+        if (jumpInput)
         {
-            sprite.flipX = true;
-            animator.SetBool("isWalk", true);
+            rb.linearVelocity = new Vector2(
+                rb.linearVelocity.x,
+                0f
+            );
 
+            rb.AddForce(
+                Vector2.up * jumpForce,
+                ForceMode2D.Impulse
+            );
+
+            jumpInput = false;
+            isGrounded = false;
         }
-        else if (x < 0)
-        {
+    }
+
+    private void UpdateAnimation()
+    {
+        bool isWalk = Mathf.Abs(moveInput) > 0.01f;
+        animator.SetBool(IsWalk, isWalk);
+    }
+
+    private void UpdateDirection()
+    {
+        if (moveInput < 0f)
             sprite.flipX = false;
-            animator.SetBool("isWalk", true);
-        }
-        else
+        else if (moveInput > 0f)
+            sprite.flipX = true;
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        foreach (ContactPoint2D contact in collision.contacts)
         {
-            animator.SetBool("isWalk", false);
+            if (contact.normal.y > 0.5f)
+            {
+                isGrounded = true;
+                return;
+            }
         }
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        isGrounded = false;
     }
 }
