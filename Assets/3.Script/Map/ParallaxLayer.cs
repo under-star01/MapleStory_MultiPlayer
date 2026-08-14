@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(1000)]
 public class ParallaxLayer : MonoBehaviour
 {
     [SerializeField] private Transform targetCamera;
@@ -10,18 +11,14 @@ public class ParallaxLayer : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float parallaxY = 0f;
 
-    private Vector3 startPosition;
-    private Vector3 startCameraPosition;
+    private Vector3 parallaxOrigin;
 
     private void Awake()
     {
         if (targetCamera == null && Camera.main != null)
             targetCamera = Camera.main.transform;
 
-        startPosition = transform.position;
-
-        if (targetCamera != null)
-            startCameraPosition = targetCamera.position;
+        parallaxOrigin = transform.position;
     }
 
     private void LateUpdate()
@@ -29,12 +26,10 @@ public class ParallaxLayer : MonoBehaviour
         if (targetCamera == null)
             return;
 
-        Vector3 cameraDelta = targetCamera.position - startCameraPosition;
-
         transform.position = new Vector3(
-            startPosition.x + cameraDelta.x * parallaxX,
-            startPosition.y + cameraDelta.y * parallaxY,
-            startPosition.z
+            parallaxOrigin.x + targetCamera.position.x * parallaxX,
+            parallaxOrigin.y + targetCamera.position.y * parallaxY,
+            parallaxOrigin.z
         );
     }
 }
