@@ -1,8 +1,23 @@
 using UnityEngine;
 
-public abstract class PlayerSkillBase : MonoBehaviour, IPlayerSkill
+public abstract class PlayerSkillBase :
+    MonoBehaviour,
+    IPlayerSkill
 {
-    public abstract bool CanExecute(SkillContext context);
+    private Sprite icon;
 
-    public abstract void Execute(SkillContext context);
+    public Sprite Icon => icon;
+
+    public void Initialize(Sprite skillIcon)
+    {
+        icon = skillIcon;
+    }
+
+    public abstract bool CanExecute(
+        SkillContext context
+    );
+
+    public abstract void Execute(
+        SkillContext context
+    );
 }

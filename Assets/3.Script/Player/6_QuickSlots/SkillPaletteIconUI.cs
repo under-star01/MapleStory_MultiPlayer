@@ -38,6 +38,8 @@ public class SkillPaletteIconUI :
         if (skillId == SkillId.None)
             return;
 
-        quickSlotSettingUI.PickSkill(skillId);
+        quickSlotSettingUI.PickSkill(
+            skillId
+        );
     }
 }

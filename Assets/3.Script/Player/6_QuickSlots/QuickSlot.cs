@@ -4,18 +4,21 @@ public class QuickSlot
 {
     private IQuickSlotCommand command;
 
-    /// <summary>
-    /// 현재 슬롯에 연결된 스킬의 ID입니다.
-    /// 일반 Command이거나 빈 슬롯이면 None입니다.
-    /// </summary>
-    public SkillId SkillId { get; private set; }
-        = SkillId.None;
+    public QuickSlotBinding Binding { get; private set; }
+        = QuickSlotBinding.Empty();
+
+    /*
+     * 기본 기능이 등록된 경우에만 값을 가집니다.
+     * 스킬 또는 빈 슬롯이면 null입니다.
+     */
+    public BasicActionData BasicActionData
+    {
+        get;
+        private set;
+    }
 
     public bool IsEmpty => command == null;
 
-    /// <summary>
-    /// 스킬 ID와 해당 스킬을 실행할 Command를 함께 연결합니다.
-    /// </summary>
     public void BindSkill(
         SkillId skillId,
         IQuickSlotCommand command)
@@ -26,26 +29,35 @@ public class QuickSlot
             return;
         }
 
-        SkillId = skillId;
+        Binding =
+            QuickSlotBinding.FromSkill(skillId);
+
+        BasicActionData = null;
         this.command = command;
     }
 
     /// <summary>
-    /// 스킬이 아닌 일반 Command를 연결합니다.
+    /// 기본 기능 데이터 전체를 슬롯에 연결합니다.
     /// </summary>
-    public void BindCommand(
-        IQuickSlotCommand command)
+    public void BindBasicAction(
+        BasicActionData actionData)
     {
-        if (command == null)
+        if (actionData == null ||
+            actionData.ActionId == BasicActionId.None ||
+            actionData.Command == null)
+        {
             return;
+        }
 
-        SkillId = SkillId.None;
-        this.command = command;
+        Binding =
+            QuickSlotBinding.FromBasicAction(
+                actionData.ActionId
+            );
+
+        BasicActionData = actionData;
+        command = actionData.Command;
     }
 
-    /// <summary>
-    /// 현재 슬롯에 연결된 기능을 실행합니다.
-    /// </summary>
     public bool Execute(Vector2 inputDirection)
     {
         if (command == null)
@@ -54,18 +66,16 @@ public class QuickSlot
         return command.Execute(inputDirection);
     }
 
-    /// <summary>
-    /// 현재 슬롯의 바인딩을 제거합니다.
-    /// </summary>
     public void Clear()
     {
-        SkillId = SkillId.None;
+        Binding = QuickSlotBinding.Empty();
+        BasicActionData = null;
         command = null;
     }
 
     /// <summary>
-    /// 다른 슬롯과 전체 바인딩 내용을 교환합니다.
-    /// 상대 슬롯이 비어 있으면 이동처럼 동작합니다.
+    /// Command, Binding, BasicActionData를 함께 교환합니다.
+    /// 대상이 비어 있으면 이동처럼 동작합니다.
     /// </summary>
     public void SwapWith(QuickSlot other)
     {
@@ -78,19 +88,18 @@ public class QuickSlot
         IQuickSlotCommand tempCommand =
             command;
 
-        SkillId tempSkillId =
-            SkillId;
+        QuickSlotBinding tempBinding =
+            Binding;
 
-        command =
-            other.command;
+        BasicActionData tempActionData =
+            BasicActionData;
 
-        SkillId =
-            other.SkillId;
+        command = other.command;
+        Binding = other.Binding;
+        BasicActionData = other.BasicActionData;
 
-        other.command =
-            tempCommand;
-
-        other.SkillId =
-            tempSkillId;
+        other.command = tempCommand;
+        other.Binding = tempBinding;
+        other.BasicActionData = tempActionData;
     }
 }

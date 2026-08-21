@@ -6,13 +6,16 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerAnimController))]
 public class PlayerSkillController : MonoBehaviour
 {
+    [Serializable]
+    private class DefaultSkillEntry
+    {
+        public SkillId skillId;
+        public Sprite icon;
+    }
+
     [Header("Default Skills")]
     [SerializeField]
-    private List<SkillId> defaultSkillIds = new()
-    {
-        SkillId.Jump,
-        SkillId.BasicAttack
-    };
+    private List<DefaultSkillEntry> defaultSkills = new();
 
     private readonly Dictionary<SkillId, PlayerSkillBase>
         learnedSkills = new();
@@ -50,18 +53,45 @@ public class PlayerSkillController : MonoBehaviour
     }
 
     /// <summary>
-    /// 스킬 ID에 해당하는 스킬을 획득합니다.
-    /// 이미 보유 중이면 기존 스킬을 반환합니다.
+    /// 아이콘 정보 없이 스킬을 획득합니다.
+    /// 기존 코드와의 호환을 위해 유지합니다.
     /// </summary>
     public bool LearnSkill(
         SkillId skillId,
         out PlayerSkillBase learnedSkill)
     {
-        // 이미 보유 중이면 기존 인스턴스를 반환합니다.
+        return LearnSkill(
+            skillId,
+            null,
+            out learnedSkill
+        );
+    }
+
+    /// <summary>
+    /// 스킬 ID에 해당하는 스킬을 생성하거나 재사용하고,
+    /// 전달받은 아이콘으로 초기화합니다.
+    /// </summary>
+    public bool LearnSkill(
+        SkillId skillId,
+        Sprite icon,
+        out PlayerSkillBase learnedSkill)
+    {
+        if (skillId == SkillId.None)
+        {
+            learnedSkill = null;
+            return false;
+        }
+
+        // 이미 배운 스킬이면 기존 인스턴스를 반환합니다.
         if (learnedSkills.TryGetValue(
                 skillId,
                 out learnedSkill))
         {
+            if (icon != null)
+            {
+                learnedSkill.Initialize(icon);
+            }
+
             return true;
         }
 
@@ -78,22 +108,19 @@ public class PlayerSkillController : MonoBehaviour
         {
             Debug.LogError(
                 $"{skillType.Name}은 " +
-                $"{nameof(PlayerSkillBase)}를 상속하지 않습니다."
+                $"{nameof(PlayerSkillBase)}를 상속하지 않습니다.",
+                this
             );
 
             learnedSkill = null;
             return false;
         }
 
-        // 플레이어에게 이미 붙어 있다면 재사용합니다.
-        PlayerSkillBase existingSkill =
+        // 이미 플레이어에게 붙어 있다면 재사용합니다.
+        learnedSkill =
             GetComponent(skillType) as PlayerSkillBase;
 
-        if (existingSkill != null)
-        {
-            learnedSkill = existingSkill;
-        }
-        else
+        if (learnedSkill == null)
         {
             learnedSkill =
                 gameObject.AddComponent(skillType)
@@ -102,6 +129,16 @@ public class PlayerSkillController : MonoBehaviour
 
         if (learnedSkill == null)
             return false;
+
+        learnedSkill.Initialize(icon);
+
+        if (icon == null)
+        {
+            Debug.LogWarning(
+                $"{skillId} 스킬의 아이콘이 설정되지 않았습니다.",
+                this
+            );
+        }
 
         learnedSkills.Add(
             skillId,
@@ -128,17 +165,21 @@ public class PlayerSkillController : MonoBehaviour
 
     private void LearnDefaultSkills()
     {
-        foreach (SkillId skillId in defaultSkillIds)
+        foreach (DefaultSkillEntry entry in defaultSkills)
         {
-            if (skillId == SkillId.None)
+            if (entry == null ||
+                entry.skillId == SkillId.None)
+            {
                 continue;
+            }
 
             if (!LearnSkill(
-                    skillId,
+                    entry.skillId,
+                    entry.icon,
                     out _))
             {
                 Debug.LogWarning(
-                    $"기본 스킬 획득 실패: {skillId}",
+                    $"기본 스킬 획득 실패: {entry.skillId}",
                     this
                 );
             }
