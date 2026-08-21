@@ -12056,6 +12056,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 739331638}
+  - component: {fileID: 739331640}
   - component: {fileID: 739331639}
   m_Layer: 5
   m_Name: QuickSlotSettingUI
@@ -12103,6 +12104,19 @@ MonoBehaviour:
   basicActionPaletteUI: {fileID: 214034205}
   keyboard: {fileID: 1299145985}
   pickedIcon: {fileID: 807326536}
+  startOpened: 0
+--- !u!225 &739331640
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739331637}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &754802677
 GameObject:
   m_ObjectHideFlags: 0

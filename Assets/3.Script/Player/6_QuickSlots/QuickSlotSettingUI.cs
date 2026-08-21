@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(CanvasGroup))]
 public class QuickSlotSettingUI : MonoBehaviour
 {
     [Header("References")]
@@ -18,6 +19,12 @@ public class QuickSlotSettingUI : MonoBehaviour
     [SerializeField]
     private Image pickedIcon;
 
+    private CanvasGroup canvasGroup;
+
+    [Header("Window")]
+    [SerializeField]
+    private bool startOpened;
+
     private readonly Dictionary<QuickKey, QuickKeySlotUI>
         keySlots = new();
 
@@ -32,13 +39,21 @@ public class QuickSlotSettingUI : MonoBehaviour
     // 키보드 슬롯에서 집은 경우
     private QuickKey? pickedSourceKey;
 
+    public bool IsOpened { get; private set; }
+
     private bool IsPicking =>
         !pickedBinding.IsEmpty;
 
     private void Awake()
     {
+        if (canvasGroup == null)
+        {
+            canvasGroup = GetComponent<CanvasGroup>();
+        }
+
         CollectKeySlots();
         HidePickedIcon();
+        SetWindowVisible(startOpened);
     }
 
     private void OnEnable()
@@ -84,7 +99,6 @@ public class QuickSlotSettingUI : MonoBehaviour
 
     /// <summary>
     /// 스킬 팔레트에서 스킬을 집습니다.
-    /// 아이콘은 실제 스킬 데이터에서 조회합니다.
     /// </summary>
     public void PickSkill(SkillId skillId)
     {
@@ -111,6 +125,9 @@ public class QuickSlotSettingUI : MonoBehaviour
         ShowPickedIcon(icon);
     }
 
+    /// <summary>
+    /// 기본 기능 팔레트에서 기능을 집습니다.
+    /// </summary>
     public void PickBasicAction(
         BasicActionData actionData,
         BasicActionSlotUI sourceSlot)
@@ -139,6 +156,10 @@ public class QuickSlotSettingUI : MonoBehaviour
         ShowPickedIcon(actionData.Icon);
     }
 
+    /// <summary>
+    /// 빈 공간을 클릭했을 때 선택한 기능을 해제합니다.
+    /// 키에서 집은 기본 기능은 팔레트로 되돌립니다.
+    /// </summary>
     public void OnEmptyAreaClicked()
     {
         if (!IsPicking)
@@ -178,18 +199,19 @@ public class QuickSlotSettingUI : MonoBehaviour
 
     public void Open()
     {
-        gameObject.SetActive(true);
+        SetWindowVisible(true);
+        RefreshAllSlots();
     }
 
     public void Close()
     {
         CancelPick();
-        gameObject.SetActive(false);
+        SetWindowVisible(false);
     }
 
     public void Toggle()
     {
-        if (gameObject.activeSelf)
+        if (IsOpened)
         {
             Close();
         }
@@ -219,7 +241,10 @@ public class QuickSlotSettingUI : MonoBehaviour
             }
 
             Sprite icon =
-                GetBindingIcon(key, binding);
+                GetBindingIcon(
+                    key,
+                    binding
+                );
 
             if (icon == null)
             {
@@ -248,7 +273,10 @@ public class QuickSlotSettingUI : MonoBehaviour
         }
 
         Sprite icon =
-            GetBindingIcon(key, binding);
+            GetBindingIcon(
+                key,
+                binding
+            );
 
         if (icon == null)
             return;
@@ -434,6 +462,20 @@ public class QuickSlotSettingUI : MonoBehaviour
         pickedSourceKey = null;
 
         HidePickedIcon();
+    }
+
+    private void SetWindowVisible(bool visible)
+    {
+        IsOpened = visible;
+
+        if (canvasGroup == null)
+            return;
+
+        canvasGroup.alpha =
+            visible ? 1f : 0f;
+
+        canvasGroup.interactable = visible;
+        canvasGroup.blocksRaycasts = visible;
     }
 
     private void CollectKeySlots()
