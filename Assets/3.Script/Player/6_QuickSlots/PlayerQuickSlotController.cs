@@ -51,28 +51,36 @@ public class PlayerQuickSlotController : MonoBehaviour
         return slot.Execute(inputDirection);
     }
 
+    public bool ExecuteSkill(
+        SkillId skillId,
+        Vector2 inputDirection)
+    {
+        if (skillId == SkillId.None)
+            return false;
+
+        if (!skillController.TryGetSkill(
+                skillId,
+                out PlayerSkillBase skill))
+        {
+            return false;
+        }
+
+        return skillController.TryExecute(
+            skill,
+            inputDirection
+        );
+    }
+
     public bool BindSkill(
         QuickKey key,
         SkillId skillId)
     {
-        if (!TryGetSlot(
+        if (!TryBindSkill(
                 key,
-                out QuickSlot slot))
+                skillId))
         {
             return false;
         }
-
-        if (!TryCreateSkillCommand(
-                skillId,
-                out IQuickSlotCommand command))
-        {
-            return false;
-        }
-
-        slot.BindSkill(
-            skillId,
-            command
-        );
 
         NotifyBindingsChanged();
         return true;
@@ -288,7 +296,7 @@ public class PlayerQuickSlotController : MonoBehaviour
                 key,
                 out QuickSlot slot))
         {
-            return true;
+            return false;
         }
 
         return slot.IsEmpty;
@@ -319,39 +327,49 @@ public class PlayerQuickSlotController : MonoBehaviour
                 continue;
             }
 
-            if (!TryGetSlot(
+            if (!TryBindSkill(
                     binding.key,
-                    out QuickSlot slot))
-            {
-                Debug.LogWarning(
-                    $"존재하지 않는 단축키입니다: " +
-                    $"{binding.key}",
-                    this
-                );
-
-                continue;
-            }
-
-            if (!TryCreateSkillCommand(
-                    binding.skillId,
-                    out IQuickSlotCommand command))
+                    binding.skillId))
             {
                 Debug.LogWarning(
                     $"기본 단축키 등록 실패: " +
                     $"{binding.key} → {binding.skillId}",
                     this
                 );
-
-                continue;
             }
-
-            slot.BindSkill(
-                binding.skillId,
-                command
-            );
         }
 
         NotifyBindingsChanged();
+    }
+
+    /// <summary>
+    /// 이벤트를 발생시키지 않고 스킬을 슬롯에 연결합니다.
+    /// 초기 바인딩과 런타임 바인딩에서 공통으로 사용합니다.
+    /// </summary>
+    private bool TryBindSkill(
+        QuickKey key,
+        SkillId skillId)
+    {
+        if (!TryGetSlot(
+                key,
+                out QuickSlot slot))
+        {
+            return false;
+        }
+
+        if (!TryCreateSkillCommand(
+                skillId,
+                out IQuickSlotCommand command))
+        {
+            return false;
+        }
+
+        slot.BindSkill(
+            skillId,
+            command
+        );
+
+        return true;
     }
 
     private bool TryCreateSkillCommand(

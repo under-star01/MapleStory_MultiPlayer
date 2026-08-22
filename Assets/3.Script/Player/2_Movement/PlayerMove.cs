@@ -1,20 +1,34 @@
 using System.Collections;
+using Mirror;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Collider2D))]
-public class PlayerMove : MonoBehaviour
+public class PlayerMove : NetworkBehaviour
 {
+    [SyncVar(hook = nameof(OnFacingRightChanged))]
+    private bool facingRight;
+
     [Header("Movement")]
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 8f;
-    [SerializeField] private float maxFallSpeed = 20f;
+    [SerializeField]
+    private float moveSpeed = 5f;
+
+    [SerializeField]
+    private float jumpForce = 8f;
+
+    [SerializeField]
+    private float maxFallSpeed = 20f;
 
     [Header("Ground Check")]
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundCheckDistance = 0.1f;
-    [SerializeField] private LayerMask groundLayer;
+    [SerializeField]
+    private Transform groundCheck;
+
+    [SerializeField]
+    private float groundCheckDistance = 0.1f;
+
+    [SerializeField]
+    private LayerMask groundLayer;
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
@@ -41,10 +55,8 @@ public class PlayerMove : MonoBehaviour
     {
         get
         {
-            if (!movementEnabled)
-                return false;
-
-            if (ignoredPlatform != null ||
+            if (!movementEnabled ||
+                ignoredPlatform != null ||
                 groundHit.collider == null)
             {
                 return false;
@@ -59,7 +71,7 @@ public class PlayerMove : MonoBehaviour
     }
 
     public Vector2 FacingDirection =>
-        spriteRenderer.flipX
+        facingRight
             ? Vector2.right
             : Vector2.left;
 
@@ -70,30 +82,75 @@ public class PlayerMove : MonoBehaviour
         playerCollider = GetComponent<Collider2D>();
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        CheckGround();
+        RestoreIgnoredPlatformCollision();
+    }
+
+    private void RestoreIgnoredPlatformCollision()
+    {
+        if (ignoredPlatform == null ||
+            playerCollider == null)
+        {
+            return;
+        }
+
+        Physics2D.IgnoreCollision(
+            playerCollider,
+            ignoredPlatform,
+            false
+        );
+
+        ignoredPlatform = null;
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        rb.simulated = true;
+
+        // Prefab에 설정된 초기 방향을 서버 상태로 사용합니다.
+        facingRight = spriteRenderer.flipX;
+        ApplyFacingDirection(facingRight);
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        ApplyFacingDirection(facingRight);
+
+        // 순수 클라이언트는 서버의 물리 결과만 전달받습니다.
+        if (!isServer)
+        {
+            rb.simulated = false;
+        }
     }
 
     private void FixedUpdate()
     {
+        if (!isServer)
+            return;
+
+        CheckGround();
         ApplyMovement();
         ApplyJump();
         ClampFallSpeed();
     }
 
     /// <summary>
-    /// 외부 입력 시스템에서 좌우 입력값을 전달합니다.
+    /// 서버에서 플레이어의 좌우 이동 입력을 설정합니다.
     /// </summary>
+    [Server]
     public void SetMoveInput(float input)
     {
-        if (!movementEnabled)
-        {
-            moveInput = 0f;
-            return;
-        }
+        moveInput =
+            Mathf.Clamp(input, -1f, 1f);
 
-        moveInput = Mathf.Clamp(input, -1f, 1f);
+        // 이동이 잠긴 동안에는 방향을 바꾸지 않습니다.
+        if (!movementEnabled)
+            return;
 
         UpdateDirection();
     }
@@ -102,9 +159,10 @@ public class PlayerMove : MonoBehaviour
     /// 점프 가능한 상태라면 점프를 예약합니다.
     /// 실제 물리 처리는 FixedUpdate에서 수행합니다.
     /// </summary>
+    [Server]
     public bool RequestJump()
     {
-        if (!movementEnabled || !IsGrounded)
+        if (!CanJump)
             return false;
 
         jumpRequested = true;
@@ -112,23 +170,27 @@ public class PlayerMove : MonoBehaviour
     }
 
     /// <summary>
-    /// 현재 밟고 있는 발판이 단방향 발판이면 아래로 통과합니다.
+    /// 현재 밟고 있는 단방향 발판을 아래로 통과합니다.
     /// </summary>
+    [Server]
     public bool RequestDropDown()
     {
         if (!CanDropDown)
             return false;
 
-        Collider2D platform = groundHit.collider;
+        StartCoroutine(
+            DropThroughPlatform(
+                groundHit.collider
+            )
+        );
 
-        StartCoroutine(DropThroughPlatform(platform));
         return true;
     }
 
     /// <summary>
-    /// 공격, 피격, 대화 등의 외부 기능이 이동 가능 여부를 설정합니다.
-    /// PlayerMove는 이동이 제한된 이유를 알 필요가 없습니다.
+    /// 외부 기능에서 플레이어의 이동 가능 여부를 설정합니다.
     /// </summary>
+    [Server]
     public void SetMovementEnabled(
         bool enabled,
         bool stopHorizontalMovement = false)
@@ -136,9 +198,12 @@ public class PlayerMove : MonoBehaviour
         movementEnabled = enabled;
 
         if (enabled)
+        {
+            // 공격이 끝난 순간, 공격 중 마지막으로 입력한 방향을 적용합니다.
+            UpdateDirection();
             return;
+        }
 
-        moveInput = 0f;
         jumpRequested = false;
 
         if (stopHorizontalMovement)
@@ -198,14 +263,34 @@ public class PlayerMove : MonoBehaviour
 
     private void UpdateDirection()
     {
-        if (moveInput < 0f)
-        {
-            spriteRenderer.flipX = false;
-        }
-        else if (moveInput > 0f)
-        {
-            spriteRenderer.flipX = true;
-        }
+        if (Mathf.Approximately(moveInput, 0f))
+            return;
+
+        bool newFacingRight =
+            moveInput > 0f;
+
+        if (facingRight == newFacingRight)
+            return;
+
+        facingRight = newFacingRight;
+
+        // Dedicated Server에서는 화면이 없지만,
+        // Host 화면에는 즉시 반영되도록 직접 적용합니다.
+        ApplyFacingDirection(facingRight);
+    }
+
+    private void ApplyFacingDirection(
+        bool isFacingRight)
+    {
+        spriteRenderer.flipX =
+            isFacingRight;
+    }
+
+    private void OnFacingRightChanged(
+        bool oldValue,
+        bool newValue)
+    {
+        ApplyFacingDirection(newValue);
     }
 
     private void CheckGround()
@@ -222,7 +307,8 @@ public class PlayerMove : MonoBehaviour
             groundHit.collider != null;
     }
 
-    private IEnumerator DropThroughPlatform(Collider2D platform)
+    private IEnumerator DropThroughPlatform(
+        Collider2D platform)
     {
         ignoredPlatform = platform;
         IsGrounded = false;
@@ -234,7 +320,6 @@ public class PlayerMove : MonoBehaviour
             true
         );
 
-        // 곧바로 아래로 내려가기 시작하도록 작은 하강 속도를 적용합니다.
         if (rb.linearVelocity.y > -1f)
         {
             rb.linearVelocity = new Vector2(
@@ -243,23 +328,14 @@ public class PlayerMove : MonoBehaviour
             );
         }
 
-        // 플레이어 전체가 발판 아래로 내려갈 때까지 기다립니다.
         while (platform != null &&
-               playerCollider.bounds.max.y >= platform.bounds.min.y)
+               playerCollider.bounds.max.y >=
+               platform.bounds.min.y)
         {
             yield return new WaitForFixedUpdate();
         }
 
-        if (platform != null)
-        {
-            Physics2D.IgnoreCollision(
-                playerCollider,
-                platform,
-                false
-            );
-        }
-
-        ignoredPlatform = null;
+        RestoreIgnoredPlatformCollision();
     }
 
 #if UNITY_EDITOR

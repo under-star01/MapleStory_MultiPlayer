@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerQuickSlotController))]
-public class PlayerInputReader : MonoBehaviour
+public class PlayerInputReader : NetworkBehaviour
 {
     [Serializable]
     private class QuickKeyInputBinding
@@ -30,6 +31,7 @@ public class PlayerInputReader : MonoBehaviour
     private PlayerQuickSlotController quickSlotController;
 
     private Vector2 moveInput;
+    private bool inputEnabled;
 
     private void Awake()
     {
@@ -42,28 +44,30 @@ public class PlayerInputReader : MonoBehaviour
         CreateQuickKeyLookup();
     }
 
-    private void OnEnable()
+    /// <summary>
+    /// 이 클라이언트가 해당 플레이어의 권한을 받았을 때 호출됩니다.
+    /// 로컬 플레이어만 입력을 활성화합니다.
+    /// </summary>
+    public override void OnStartAuthority()
     {
-        EnableMoveInput();
-        EnableQuickKeyInputs();
+        base.OnStartAuthority();
+
+        EnableInputs();
+    }
+
+    /// <summary>
+    /// 플레이어에 대한 권한을 잃었을 때 입력을 해제합니다.
+    /// </summary>
+    public override void OnStopAuthority()
+    {
+        DisableInputs();
+
+        base.OnStopAuthority();
     }
 
     private void OnDisable()
     {
-        DisableMoveInput();
-        DisableQuickKeyInputs();
-
-        moveInput = Vector2.zero;
-
-        if (playerMove != null)
-        {
-            playerMove.SetMoveInput(0f);
-        }
-    }
-
-    private void Update()
-    {
-        playerMove.SetMoveInput(moveInput.x);
+        DisableInputs();
     }
 
     private void OnMovePerformed(
@@ -71,18 +75,22 @@ public class PlayerInputReader : MonoBehaviour
     {
         moveInput =
             context.ReadValue<Vector2>();
+
+        CmdSetMoveInput(moveInput.x);
     }
 
     private void OnMoveCanceled(
         InputAction.CallbackContext context)
     {
         moveInput = Vector2.zero;
+
+        CmdSetMoveInput(0f);
     }
 
     /// <summary>
-    /// 모든 단축키 Action이 공통으로 사용하는 콜백입니다.
-    /// 실행된 Action을 QuickKey로 변환한 뒤
-    /// 해당 슬롯의 Command를 실행합니다.
+    /// 실행된 InputAction을 QuickKey로 변환합니다.
+    /// 스킬은 서버에 실행을 요청하고,
+    /// 기본 기능은 로컬에서 실행합니다.
     /// </summary>
     private void OnQuickKeyPerformed(
         InputAction.CallbackContext context)
@@ -94,10 +102,58 @@ public class PlayerInputReader : MonoBehaviour
             return;
         }
 
-        quickSlotController.Execute(
-            key,
-            moveInput
-        );
+        if (!quickSlotController.TryGetBinding(
+                key,
+                out QuickSlotBinding binding))
+        {
+            return;
+        }
+
+        switch (binding.Type)
+        {
+            case QuickSlotBindingType.Skill:
+                CmdExecuteSkill(
+                    binding.SkillId,
+                    moveInput
+                );
+                break;
+
+            case QuickSlotBindingType.BasicAction:
+                quickSlotController.Execute(
+                    key,
+                    moveInput
+                );
+                break;
+        }
+    }
+
+    private void EnableInputs()
+    {
+        if (inputEnabled)
+            return;
+
+        EnableMoveInput();
+        EnableQuickKeyInputs();
+
+        inputEnabled = true;
+    }
+
+    private void DisableInputs()
+    {
+        if (!inputEnabled)
+            return;
+
+        DisableMoveInput();
+        DisableQuickKeyInputs();
+
+        moveInput = Vector2.zero;
+
+        if (isOwned && NetworkClient.active)
+        {
+            CmdSetMoveInput(0f);
+        }
+
+        inputEnabled = false;
     }
 
     private void EnableMoveInput()
@@ -204,9 +260,34 @@ public class PlayerInputReader : MonoBehaviour
                binding.action.action != null;
     }
 
-#if UNITY_EDITOR
-    private void OnValidate()
+    [Command]
+    private void CmdSetMoveInput(float input)
     {
+        playerMove.SetMoveInput(input);
+    }
+
+    [Command]
+    private void CmdExecuteSkill(
+        SkillId skillId,
+        Vector2 inputDirection)
+    {
+        inputDirection.x =
+            Mathf.Clamp(inputDirection.x, -1f, 1f);
+
+        inputDirection.y =
+            Mathf.Clamp(inputDirection.y, -1f, 1f);
+
+        quickSlotController.ExecuteSkill(
+            skillId,
+            inputDirection
+        );
+    }
+
+#if UNITY_EDITOR
+    protected override void OnValidate()
+    {
+        base.OnValidate();
+
         HashSet<QuickKey> registeredKeys = new();
 
         foreach (QuickKeyInputBinding binding

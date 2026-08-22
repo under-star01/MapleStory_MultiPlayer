@@ -1,9 +1,11 @@
 using System;
+using Mirror;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(PlayerMove))]
-public class PlayerAnimController : MonoBehaviour
+[RequireComponent(typeof(NetworkAnimator))]
+public class PlayerAnimController : NetworkBehaviour
 {
     private static readonly int IsMovingHash =
         Animator.StringToHash("isMoving");
@@ -15,6 +17,7 @@ public class PlayerAnimController : MonoBehaviour
         Animator.StringToHash("Attack");
 
     private Animator animator;
+    private NetworkAnimator networkAnimator;
     private PlayerMove playerMove;
 
     public event Action AttackAnimationEnded;
@@ -22,11 +25,15 @@ public class PlayerAnimController : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        networkAnimator = GetComponent<NetworkAnimator>();
         playerMove = GetComponent<PlayerMove>();
     }
 
     private void Update()
     {
+        if (!isServer)
+            return;
+
         UpdateMovementAnimation();
     }
 
@@ -45,13 +52,14 @@ public class PlayerAnimController : MonoBehaviour
 
     public void PlayAttack()
     {
-        animator.SetTrigger(AttackHash);
+        if (!isServer)
+            return;
+
+        networkAnimator.SetTrigger(
+            AttackHash
+        );
     }
 
-    /// <summary>
-    /// 공격 애니메이션의 마지막 프레임에서
-    /// Animation Event로 호출합니다.
-    /// </summary>
     public void OnAttackAnimationEnded()
     {
         AttackAnimationEnded?.Invoke();
