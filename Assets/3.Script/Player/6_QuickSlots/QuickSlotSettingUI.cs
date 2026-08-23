@@ -4,12 +4,11 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class QuickSlotSettingUI : MonoBehaviour
+public class QuickSlotSettingUI :
+    MonoBehaviour,
+    ILocalPlayerUI
 {
     [Header("References")]
-    [SerializeField]
-    private PlayerQuickSlotController quickSlotController;
-
     [SerializeField]
     private BasicActionPaletteUI basicActionPaletteUI;
 
@@ -19,11 +18,14 @@ public class QuickSlotSettingUI : MonoBehaviour
     [SerializeField]
     private Image pickedIcon;
 
-    private CanvasGroup canvasGroup;
-
     [Header("Window")]
     [SerializeField]
     private bool startOpened;
+
+    private PlayerQuickSlotController quickSlotController;
+    private CanvasGroup canvasGroup;
+
+    private bool isBindingsSubscribed;
 
     private readonly Dictionary<QuickKey, QuickKeySlotUI>
         keySlots = new();
@@ -46,10 +48,7 @@ public class QuickSlotSettingUI : MonoBehaviour
 
     private void Awake()
     {
-        if (canvasGroup == null)
-        {
-            canvasGroup = GetComponent<CanvasGroup>();
-        }
+        canvasGroup = GetComponent<CanvasGroup>();
 
         CollectKeySlots();
         HidePickedIcon();
@@ -58,27 +57,110 @@ public class QuickSlotSettingUI : MonoBehaviour
 
     private void OnEnable()
     {
-        if (quickSlotController != null)
-        {
-            quickSlotController.BindingsChanged +=
-                RefreshAllSlots;
-        }
-
+        SubscribeBindingsChanged();
         RefreshAllSlots();
     }
 
     private void OnDisable()
     {
-        if (quickSlotController != null)
-        {
-            quickSlotController.BindingsChanged -=
-                RefreshAllSlots;
-        }
+        UnsubscribeBindingsChanged();
     }
 
     private void Update()
     {
         FollowMouse();
+    }
+
+    /// <summary>
+    /// 현재 클라이언트의 로컬 플레이어를 연결합니다.
+    /// </summary>
+    public void Bind(LocalPlayerContext context)
+    {
+        if (context == null)
+        {
+            Debug.LogError(
+                $"{nameof(LocalPlayerContext)}가 null입니다.",
+                this
+            );
+
+            return;
+        }
+
+        if (context.QuickSlot == null)
+        {
+            Debug.LogError(
+                $"{nameof(PlayerQuickSlotController)}를 " +
+                "찾지 못했습니다.",
+                context.Player
+            );
+
+            return;
+        }
+
+        if (quickSlotController == context.QuickSlot)
+        {
+            /*
+             * 동일한 플레이어가 다시 연결되더라도
+             * 하위 팔레트가 연결되지 않았을 수 있으므로
+             * Bind를 다시 요청합니다.
+             */
+            if (basicActionPaletteUI != null)
+            {
+                basicActionPaletteUI.Bind(
+                    quickSlotController
+                );
+            }
+
+            SubscribeBindingsChanged();
+            RefreshAllSlots();
+            return;
+        }
+
+        Unbind();
+
+        quickSlotController =
+            context.QuickSlot;
+
+        /*
+         * 로컬 플레이어의 퀵슬롯 컨트롤러를
+         * BasicActionPaletteUI에도 전달합니다.
+         */
+        if (basicActionPaletteUI != null)
+        {
+            basicActionPaletteUI.Bind(
+                quickSlotController
+            );
+        }
+        else
+        {
+            Debug.LogError(
+                $"{nameof(BasicActionPaletteUI)}가 " +
+                "연결되지 않았습니다.",
+                this
+            );
+        }
+
+        SubscribeBindingsChanged();
+        RefreshAllSlots();
+    }
+
+    /// <summary>
+    /// 현재 플레이어와 연결된 이벤트와 참조를 정리합니다.
+    /// </summary>
+    public void Unbind()
+    {
+        UnsubscribeBindingsChanged();
+
+        ClearPickedState(true);
+
+        if (basicActionPaletteUI != null)
+        {
+            basicActionPaletteUI.Unbind();
+        }
+
+        quickSlotController = null;
+
+        ClearAllSlots();
     }
 
     public void OnKeySlotClicked(
@@ -102,6 +184,9 @@ public class QuickSlotSettingUI : MonoBehaviour
     /// </summary>
     public void PickSkill(SkillId skillId)
     {
+        if (quickSlotController == null)
+            return;
+
         QuickSlotBinding binding =
             QuickSlotBinding.FromSkill(skillId);
 
@@ -162,8 +247,11 @@ public class QuickSlotSettingUI : MonoBehaviour
     /// </summary>
     public void OnEmptyAreaClicked()
     {
-        if (!IsPicking)
+        if (!IsPicking ||
+            quickSlotController == null)
+        {
             return;
+        }
 
         if (pickedSourceKey.HasValue)
         {
@@ -224,7 +312,10 @@ public class QuickSlotSettingUI : MonoBehaviour
     public void RefreshAllSlots()
     {
         if (quickSlotController == null)
+        {
+            ClearAllSlots();
             return;
+        }
 
         foreach (KeyValuePair<QuickKey, QuickKeySlotUI>
                  pair in keySlots)
@@ -263,8 +354,40 @@ public class QuickSlotSettingUI : MonoBehaviour
         }
     }
 
+    private void SubscribeBindingsChanged()
+    {
+        if (!isActiveAndEnabled ||
+            isBindingsSubscribed ||
+            quickSlotController == null)
+        {
+            return;
+        }
+
+        quickSlotController.BindingsChanged +=
+            RefreshAllSlots;
+
+        isBindingsSubscribed = true;
+    }
+
+    private void UnsubscribeBindingsChanged()
+    {
+        if (!isBindingsSubscribed)
+            return;
+
+        if (quickSlotController != null)
+        {
+            quickSlotController.BindingsChanged -=
+                RefreshAllSlots;
+        }
+
+        isBindingsSubscribed = false;
+    }
+
     private void PickFromKey(QuickKey key)
     {
+        if (quickSlotController == null)
+            return;
+
         if (!quickSlotController.TryGetBinding(
                 key,
                 out QuickSlotBinding binding))
@@ -310,6 +433,9 @@ public class QuickSlotSettingUI : MonoBehaviour
 
     private void PlaceOnKey(QuickKey targetKey)
     {
+        if (quickSlotController == null)
+            return;
+
         bool success;
         BasicActionData displacedActionData = null;
 
@@ -364,6 +490,9 @@ public class QuickSlotSettingUI : MonoBehaviour
     {
         displacedActionData = null;
 
+        if (quickSlotController == null)
+            return false;
+
         quickSlotController
             .TryGetBoundBasicActionData(
                 targetKey,
@@ -394,6 +523,9 @@ public class QuickSlotSettingUI : MonoBehaviour
         QuickKey key,
         QuickSlotBinding binding)
     {
+        if (quickSlotController == null)
+            return null;
+
         switch (binding.Type)
         {
             case QuickSlotBindingType.Skill:
@@ -464,12 +596,18 @@ public class QuickSlotSettingUI : MonoBehaviour
         HidePickedIcon();
     }
 
+    private void ClearAllSlots()
+    {
+        foreach (QuickKeySlotUI slotUI
+                 in keySlots.Values)
+        {
+            slotUI.Clear();
+        }
+    }
+
     private void SetWindowVisible(bool visible)
     {
         IsOpened = visible;
-
-        if (canvasGroup == null)
-            return;
 
         canvasGroup.alpha =
             visible ? 1f : 0f;

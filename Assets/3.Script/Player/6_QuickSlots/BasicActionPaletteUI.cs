@@ -18,9 +18,6 @@ public class BasicActionPaletteUI : MonoBehaviour
 
     [Header("References")]
     [SerializeField]
-    private PlayerQuickSlotController quickSlotController;
-
-    [SerializeField]
     private QuickSlotSettingUI quickSlotSettingUI;
 
     [Header("Initial Basic Actions")]
@@ -30,9 +27,11 @@ public class BasicActionPaletteUI : MonoBehaviour
     private readonly List<BasicActionSlotUI>
         slots = new();
 
-    private readonly Dictionary
-        <BasicActionId, IQuickSlotCommand>
+    private readonly Dictionary<BasicActionId, IQuickSlotCommand>
         commands = new();
+
+    private PlayerQuickSlotController quickSlotController;
+    private Coroutine initializeCoroutine;
 
     private void Awake()
     {
@@ -40,13 +39,64 @@ public class BasicActionPaletteUI : MonoBehaviour
         CreateCommands();
     }
 
-    private IEnumerator Start()
+    /// <summary>
+    /// 로컬 플레이어의 퀵슬롯 컨트롤러를 연결하고
+    /// 기본 기능 팔레트를 초기화합니다.
+    /// </summary>
+    public void Bind(
+        PlayerQuickSlotController controller)
     {
+        if (controller == null)
+        {
+            Debug.LogError(
+                $"{nameof(PlayerQuickSlotController)}가 null입니다.",
+                this
+            );
+
+            return;
+        }
+
+        if (quickSlotController == controller)
+            return;
+
+        Unbind();
+
+        quickSlotController = controller;
+
         /*
-         * PlayerQuickSlotController가 Start에서
-         * 기본 스킬을 먼저 등록하도록 한 프레임 기다립니다.
+         * PlayerQuickSlotController의 Start에서
+         * 기본 스킬 바인딩이 먼저 처리되도록
+         * 한 프레임 뒤 초기화합니다.
          */
+        initializeCoroutine =
+            StartCoroutine(InitializeNextFrame());
+    }
+
+    /// <summary>
+    /// 현재 플레이어와의 연결을 해제하고
+    /// 팔레트 표시를 초기화합니다.
+    /// </summary>
+    public void Unbind()
+    {
+        if (initializeCoroutine != null)
+        {
+            StopCoroutine(initializeCoroutine);
+            initializeCoroutine = null;
+        }
+
+        quickSlotController = null;
+
+        ClearPalette();
+    }
+
+    private IEnumerator InitializeNextFrame()
+    {
         yield return null;
+
+        initializeCoroutine = null;
+
+        if (quickSlotController == null)
+            yield break;
 
         InitializePalette();
     }
@@ -58,12 +108,15 @@ public class BasicActionPaletteUI : MonoBehaviour
     /// </summary>
     private void InitializePalette()
     {
+        ClearPalette();
+
         foreach (BasicActionEntry entry in basicActions)
         {
             if (!IsValid(entry))
                 continue;
 
-            // 이미 다른 키에 존재한다면 중복 생성하지 않습니다.
+            // 이미 다른 키에 바인딩되어 있다면
+            // 팔레트에 중복 생성하지 않습니다.
             if (IsActionBound(entry.actionId))
                 continue;
 
@@ -88,11 +141,10 @@ public class BasicActionPaletteUI : MonoBehaviour
                 );
 
             /*
-             * 기본 키를 사용하고 해당 키가 비어 있다면
+             * 기본 키를 사용하며 해당 키가 비어 있다면
              * 시작 시 바로 바인딩합니다.
              */
             if (entry.useDefaultBinding &&
-                quickSlotController != null &&
                 quickSlotController.IsSlotEmpty(
                     entry.defaultKey))
             {
@@ -146,6 +198,14 @@ public class BasicActionPaletteUI : MonoBehaviour
         return false;
     }
 
+    private void ClearPalette()
+    {
+        foreach (BasicActionSlotUI slot in slots)
+        {
+            slot.Clear();
+        }
+    }
+
     private void CollectSlots()
     {
         slots.Clear();
@@ -173,7 +233,14 @@ public class BasicActionPaletteUI : MonoBehaviour
         commands.Clear();
 
         if (quickSlotSettingUI == null)
+        {
+            Debug.LogError(
+                $"{nameof(QuickSlotSettingUI)}가 연결되지 않았습니다.",
+                this
+            );
+
             return;
+        }
 
         commands.Add(
             BasicActionId.OpenQuickSlotSetting,
