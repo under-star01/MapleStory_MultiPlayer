@@ -18,10 +18,11 @@ GameObject:
   - component: {fileID: 8882072951341120682}
   - component: {fileID: 1764234220800607801}
   - component: {fileID: 5726701553201237585}
+  - component: {fileID: 2949302589284177834}
   - component: {fileID: 549856490600395042}
   - component: {fileID: 6081832958655312243}
   - component: {fileID: 251517183009848918}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Player0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -200,6 +201,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0fc9d0f3ef38dc44a34722210efee0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputReader
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   moveAction: {fileID: -1255475571409409096, guid: b4ca8da2d6135fc4fba9ef2053559d20, type: 3}
   quickKeyInputs:
   - key: 0
@@ -304,6 +308,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eeb4ff45aa9816948ab45e6789fa7c76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMove
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   moveSpeed: 3.5
   jumpForce: 8
   maxFallSpeed: 20
@@ -324,6 +331,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0a44e42aafa44848b0123da97fce3e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!114 &1764234220800607801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -358,6 +368,21 @@ MonoBehaviour:
     skillId: 1000
   - key: 42
     skillId: 1001
+--- !u!114 &2949302589284177834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34263d01c6243364ab363f60e359cc89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerCameraBinder
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!114 &549856490600395042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -435,7 +460,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 965960409149005412}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: GroundCheck
   m_TagString: Untagged
   m_Icon: {fileID: 7148428337604731935, guid: 0000000000000000d000000000000000, type: 0}
