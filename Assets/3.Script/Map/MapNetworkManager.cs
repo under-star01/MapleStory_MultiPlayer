@@ -1,36 +1,35 @@
 using System.Collections;
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// 서버가 특정 클라이언트에게
-/// 맵 씬 로드를 요청할 때 전송합니다.
-/// </summary>
-public struct LoadMapMessage : NetworkMessage
-{
-    public MapId MapId;
-}
-
-/// <summary>
-/// 클라이언트가 맵 씬 로드를 완료한 뒤
-/// 서버에 완료 사실을 전달합니다.
-/// </summary>
-public struct MapLoadedMessage : NetworkMessage
-{
-    public MapId MapId;
-}
-
 [RequireComponent(typeof(MapSceneManager))]
 public class MapNetworkManager : NetworkManager
 {
-    private const string DefaultSpawnId =
-        "Default";
+    private class PendingMapTransition
+    {
+        public MapId TargetMapId { get; }
+        public string TargetSpawnId { get; }
+
+        public PendingMapTransition(
+            MapId targetMapId,
+            string targetSpawnId)
+        {
+            TargetMapId = targetMapId;
+            TargetSpawnId = targetSpawnId;
+        }
+    }
+
+    private const string DefaultSpawnId = "Default";
 
     [Header("Initial Map")]
     [SerializeField]
-    private MapId initialMapId =
-        MapId.MainTown;
+    private MapId initialMapId = MapId.MainTown;
+
+    private readonly Dictionary
+        <NetworkConnectionToClient, PendingMapTransition>
+        pendingTransitions = new();
 
     private MapSceneManager mapSceneManager;
     private Coroutine loadMapsCoroutine;
@@ -52,6 +51,11 @@ public class MapNetworkManager : NetworkManager
                 OnServerMapLoaded
             );
 
+        NetworkServer.RegisterHandler
+            <TransitionMapLoadedMessage>(
+                OnServerTransitionMapLoaded
+            );
+
         loadMapsCoroutine =
             StartCoroutine(
                 LoadServerMaps()
@@ -63,12 +67,16 @@ public class MapNetworkManager : NetworkManager
         NetworkServer.UnregisterHandler
             <MapLoadedMessage>();
 
+        NetworkServer.UnregisterHandler
+            <TransitionMapLoadedMessage>();
+
         if (loadMapsCoroutine != null)
         {
             StopCoroutine(loadMapsCoroutine);
             loadMapsCoroutine = null;
         }
 
+        pendingTransitions.Clear();
         mapSceneManager.ClearServerMapState();
 
         base.OnStopServer();
@@ -82,12 +90,28 @@ public class MapNetworkManager : NetworkManager
             <LoadMapMessage>(
                 OnClientLoadMap
             );
+
+        NetworkClient.RegisterHandler
+            <LoadTransitionMapMessage>(
+                OnClientLoadTransitionMap
+            );
+
+        NetworkClient.RegisterHandler
+            <CompleteMapTransitionMessage>(
+                OnClientCompleteMapTransition
+            );
     }
 
     public override void OnStopClient()
     {
         NetworkClient.UnregisterHandler
             <LoadMapMessage>();
+
+        NetworkClient.UnregisterHandler
+            <LoadTransitionMapMessage>();
+
+        NetworkClient.UnregisterHandler
+            <CompleteMapTransitionMessage>();
 
         base.OnStopClient();
     }
@@ -102,6 +126,14 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    public override void OnServerDisconnect(
+        NetworkConnectionToClient conn)
+    {
+        pendingTransitions.Remove(conn);
+
+        base.OnServerDisconnect(conn);
+    }
+
     private IEnumerator LoadServerMaps()
     {
         yield return
@@ -110,17 +142,11 @@ public class MapNetworkManager : NetworkManager
         loadMapsCoroutine = null;
     }
 
-    /// <summary>
-    /// 서버의 맵 로드가 끝나면 클라이언트에게
-    /// 초기 맵 로드를 요청합니다.
-    /// </summary>
     private IEnumerator SendInitialMapWhenReady(
         NetworkConnectionToClient conn)
     {
         yield return new WaitUntil(
-            () =>
-                mapSceneManager
-                    .AreServerMapsLoaded
+            () => mapSceneManager.AreServerMapsLoaded
         );
 
         if (conn == null)
@@ -134,9 +160,6 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
-    /// <summary>
-    /// 클라이언트가 서버의 맵 로드 요청을 받습니다.
-    /// </summary>
     private void OnClientLoadMap(
         LoadMapMessage message)
     {
@@ -153,20 +176,12 @@ public class MapNetworkManager : NetworkManager
         yield return
             mapSceneManager.LoadClientMap(mapId);
 
-        if (!mapSceneManager.TryGetSceneName(
+        if (!IsClientMapLoaded(
                 mapId,
                 out string sceneName))
         {
             yield break;
         }
-
-        Scene loadedScene =
-            SceneManager.GetSceneByName(
-                sceneName
-            );
-
-        if (!loadedScene.isLoaded)
-            yield break;
 
         NetworkClient.Send(
             new MapLoadedMessage
@@ -182,10 +197,265 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
-    /// <summary>
-    /// 클라이언트의 맵 로드가 끝난 뒤
-    /// 플레이어를 생성합니다.
-    /// </summary>
+    private void OnClientLoadTransitionMap(
+        LoadTransitionMapMessage message)
+    {
+        StartCoroutine(
+            LoadTransitionMapAndNotifyServer(
+                message.MapId
+            )
+        );
+    }
+
+    private IEnumerator
+        LoadTransitionMapAndNotifyServer(
+            MapId mapId)
+    {
+        yield return
+            mapSceneManager.LoadClientMap(mapId);
+
+        if (!IsClientMapLoaded(
+                mapId,
+                out string sceneName))
+        {
+            yield break;
+        }
+
+        NetworkClient.Send(
+            new TransitionMapLoadedMessage
+            {
+                MapId = mapId
+            }
+        );
+
+        Debug.Log(
+            $"전환용 클라이언트 맵 로드 완료: " +
+            $"{mapId} / {sceneName}",
+            this
+        );
+    }
+
+    [Server]
+    public void RequestMapTransition(
+        NetworkConnectionToClient conn,
+        MapId targetMapId,
+        string targetSpawnId)
+    {
+        if (conn == null ||
+            conn.identity == null)
+        {
+            return;
+        }
+
+        if (pendingTransitions.ContainsKey(conn))
+        {
+            Debug.LogWarning(
+                "이미 맵 이동을 처리하고 있습니다.",
+                conn.identity
+            );
+
+            return;
+        }
+
+        if (!mapSceneManager.TryGetLoadedScene(
+                targetMapId,
+                out _))
+        {
+            Debug.LogError(
+                $"목적지 맵을 찾지 못했습니다: " +
+                $"{targetMapId}",
+                this
+            );
+
+            return;
+        }
+
+        if (mapSceneManager.FindSpawnPoint(
+                targetMapId,
+                targetSpawnId) == null)
+        {
+            Debug.LogError(
+                $"목적지 스폰 지점을 찾지 못했습니다: " +
+                $"{targetMapId} / {targetSpawnId}",
+                this
+            );
+
+            return;
+        }
+
+        pendingTransitions.Add(
+            conn,
+            new PendingMapTransition(
+                targetMapId,
+                targetSpawnId
+            )
+        );
+
+        conn.Send(
+            new LoadTransitionMapMessage
+            {
+                MapId = targetMapId
+            }
+        );
+
+        Debug.Log(
+            $"목적지 맵 로드 요청: " +
+            $"{targetMapId} / {targetSpawnId}",
+            conn.identity
+        );
+    }
+
+    private void OnServerTransitionMapLoaded(
+    NetworkConnectionToClient conn,
+    TransitionMapLoadedMessage message)
+    {
+        if (!pendingTransitions.TryGetValue(
+                conn,
+                out PendingMapTransition transition))
+        {
+            Debug.LogWarning(
+                "요청되지 않은 맵 전환 응답입니다.",
+                conn.identity
+            );
+
+            return;
+        }
+
+        if (transition.TargetMapId != message.MapId)
+        {
+            Debug.LogWarning(
+                $"맵 전환 정보가 일치하지 않습니다: " +
+                $"{transition.TargetMapId} / " +
+                $"{message.MapId}",
+                conn.identity
+            );
+
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        if (conn.identity == null)
+        {
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        if (!mapSceneManager.TryGetLoadedScene(
+                transition.TargetMapId,
+                out Scene targetScene))
+        {
+            Debug.LogError(
+                $"목적지 서버 맵을 찾지 못했습니다: " +
+                $"{transition.TargetMapId}",
+                this
+            );
+
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        Transform spawnPoint =
+            mapSceneManager.FindSpawnPoint(
+                transition.TargetMapId,
+                transition.TargetSpawnId
+            );
+
+        if (spawnPoint == null)
+        {
+            Debug.LogError(
+                $"목적지 스폰 지점을 찾지 못했습니다: " +
+                $"{transition.TargetMapId} / " +
+                $"{transition.TargetSpawnId}",
+                this
+            );
+
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        GameObject player = conn.identity.gameObject;
+
+        PlayerMove playerMove =
+            player.GetComponent<PlayerMove>();
+
+        PlayerMapController mapController =
+            player.GetComponent<PlayerMapController>();
+
+        if (playerMove == null ||
+            mapController == null)
+        {
+            Debug.LogError(
+                "플레이어의 맵 이동 컴포넌트를 " +
+                "찾지 못했습니다.",
+                player
+            );
+
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        MapId previousMapId =
+            mapController.CurrentMapId;
+
+        // 목적지의 독립 PhysicsScene2D로 이동합니다.
+        SceneManager.MoveGameObjectToScene(
+            player,
+            targetScene
+        );
+
+        playerMove.Teleport(
+            spawnPoint.position
+        );
+
+        mapController.SetCurrentMap(
+            transition.TargetMapId
+        );
+
+        /*
+         * Scene Interest Management가 변경된
+         * 플레이어의 Scene을 다시 반영하도록 합니다.
+         */
+        NetworkServer.RebuildObservers(
+            conn.identity,
+            true
+        );
+
+        conn.Send(
+            new CompleteMapTransitionMessage
+            {
+                PreviousMapId = previousMapId,
+                CurrentMapId = transition.TargetMapId
+            }
+        );
+
+        Debug.Log(
+            $"플레이어 맵 이동 완료: " +
+            $"{transition.TargetMapId} / " +
+            $"{transition.TargetSpawnId} / " +
+            $"{spawnPoint.position}",
+            player
+        );
+
+        pendingTransitions.Remove(conn);
+    }
+
+    private bool IsClientMapLoaded(
+        MapId mapId,
+        out string sceneName)
+    {
+        if (!mapSceneManager.TryGetSceneName(
+                mapId,
+                out sceneName))
+        {
+            return false;
+        }
+
+        Scene scene =
+            SceneManager.GetSceneByName(sceneName);
+
+        return scene.isLoaded;
+    }
+
     private void OnServerMapLoaded(
         NetworkConnectionToClient conn,
         MapLoadedMessage message)
@@ -272,6 +542,68 @@ public class MapNetworkManager : NetworkManager
             $"{message.MapId} / " +
             $"{spawnPoint.position}",
             player
+        );
+    }
+
+    private void OnClientCompleteMapTransition(
+    CompleteMapTransitionMessage message)
+    {
+        StartCoroutine(
+            CompleteClientMapTransition(
+                message.PreviousMapId,
+                message.CurrentMapId
+            )
+        );
+    }
+
+    private IEnumerator CompleteClientMapTransition(
+        MapId previousMapId,
+        MapId currentMapId)
+    {
+        NetworkIdentity localPlayerIdentity =
+            NetworkClient.localPlayer;
+
+        if (localPlayerIdentity == null)
+        {
+            Debug.LogError(
+                "로컬 플레이어를 찾지 못했습니다.",
+                this
+            );
+
+            yield break;
+        }
+
+        GameObject localPlayer =
+            localPlayerIdentity.gameObject;
+
+        LocalPlayerCameraBinder cameraBinder =
+            localPlayer.GetComponent
+                <LocalPlayerCameraBinder>();
+
+        if (cameraBinder == null)
+        {
+            Debug.LogError(
+                $"{nameof(LocalPlayerCameraBinder)}를 " +
+                "찾지 못했습니다.",
+                localPlayer
+            );
+
+            yield break;
+        }
+
+        cameraBinder.BindMapBounds(
+            currentMapId
+        );
+
+        yield return
+            mapSceneManager.UnloadClientMap(
+                previousMapId
+            );
+
+        Debug.Log(
+            $"클라이언트 맵 전환 완료: " +
+            $"{previousMapId} → {currentMapId}",
+            this
         );
     }
 }

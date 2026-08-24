@@ -82,23 +82,26 @@ public class LocalPlayerCameraBinder : NetworkBehaviour
 
     public void BindMapBounds()
     {
+        BindMapBounds(
+            mapController.CurrentMapId
+        );
+    }
+
+    public void BindMapBounds(MapId mapId)
+    {
         if (mapSceneManager == null ||
-            mapController == null ||
             cinemachineConfiner == null)
         {
             return;
         }
 
-        MapId currentMapId =
-            mapController.CurrentMapId;
-
         if (!mapSceneManager.TryGetLoadedScene(
-                currentMapId,
+                mapId,
                 out Scene mapScene))
         {
             Debug.LogError(
                 $"로드된 맵 씬을 찾지 못했습니다: " +
-                $"{currentMapId}",
+                $"{mapId}",
                 this
             );
 
@@ -120,6 +123,12 @@ public class LocalPlayerCameraBinder : NetworkBehaviour
 
             cinemachineConfiner
                 .InvalidateBoundingShapeCache();
+
+            Debug.Log(
+                $"카메라 경계 연결 완료: " +
+                $"{mapId} / {mapScene.name}",
+                this
+            );
 
             return;
         }

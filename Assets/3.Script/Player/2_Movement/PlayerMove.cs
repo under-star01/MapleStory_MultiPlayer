@@ -342,6 +342,23 @@ public class PlayerMove : NetworkBehaviour
         RestoreIgnoredPlatformCollision();
     }
 
+    /// <summary>
+    /// 서버에서 플레이어를 지정한 위치로 이동시키고
+    /// 기존 물리 상태를 초기화합니다.
+    /// </summary>
+    [Server]
+    public void Teleport(Vector2 position)
+    {
+        RestoreIgnoredPlatformCollision();
+
+        moveInput = 0f;
+        jumpRequested = false;
+        IsGrounded = false;
+
+        rb.linearVelocity = Vector2.zero;
+        rb.position = position;
+    }
+
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {

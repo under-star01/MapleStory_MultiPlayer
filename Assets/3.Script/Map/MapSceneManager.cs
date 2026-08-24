@@ -1,3 +1,4 @@
+using Mirror;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -314,5 +315,47 @@ public class MapSceneManager : MonoBehaviour
         );
 
         return false;
+    }
+
+    /// <summary>
+    /// 클라이언트에서 사용이 끝난 맵 씬을 언로드합니다.
+    /// Host는 서버 맵을 유지해야 하므로 언로드하지 않습니다.
+    /// </summary>
+    public IEnumerator UnloadClientMap(MapId mapId)
+    {
+        if (NetworkServer.active)
+            yield break;
+
+        if (!TryGetSceneName(
+                mapId,
+                out string sceneName))
+        {
+            yield break;
+        }
+
+        Scene scene =
+            SceneManager.GetSceneByName(sceneName);
+
+        if (!scene.isLoaded)
+        {
+            loadedScenes.Remove(mapId);
+            yield break;
+        }
+
+        AsyncOperation operation =
+            SceneManager.UnloadSceneAsync(scene);
+
+        if (operation == null)
+            yield break;
+
+        yield return operation;
+
+        loadedScenes.Remove(mapId);
+
+        Debug.Log(
+            $"클라이언트 이전 맵 언로드 완료: " +
+            $"{mapId} / {sceneName}",
+            this
+        );
     }
 }

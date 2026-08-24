@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerQuickSlotController))]
+[RequireComponent(typeof(PlayerMapController))]
 public class PlayerInputReader : NetworkBehaviour
 {
     [Serializable]
@@ -29,9 +30,11 @@ public class PlayerInputReader : NetworkBehaviour
 
     private PlayerMove playerMove;
     private PlayerQuickSlotController quickSlotController;
+    private PlayerMapController mapController;
 
     private Vector2 moveInput;
     private bool inputEnabled;
+    private bool wasUpPressed;
 
     private void Awake()
     {
@@ -40,6 +43,9 @@ public class PlayerInputReader : NetworkBehaviour
 
         quickSlotController =
             GetComponent<PlayerQuickSlotController>();
+        
+        mapController =
+            GetComponent<PlayerMapController>();
 
         CreateQuickKeyLookup();
     }
@@ -77,12 +83,28 @@ public class PlayerInputReader : NetworkBehaviour
             context.ReadValue<Vector2>();
 
         CmdSetMoveInput(moveInput.x);
+
+        bool isUpPressed =
+            moveInput.y > 0.5f;
+
+        /*
+         * 위 방향 입력이 눌리는 순간에만
+         * 한 번 포탈 사용을 요청합니다.
+         */
+        if (isUpPressed &&
+            !wasUpPressed)
+        {
+            CmdRequestUsePortal();
+        }
+
+        wasUpPressed = isUpPressed;
     }
 
     private void OnMoveCanceled(
         InputAction.CallbackContext context)
     {
         moveInput = Vector2.zero;
+        wasUpPressed = false;
 
         CmdSetMoveInput(0f);
     }
@@ -147,6 +169,7 @@ public class PlayerInputReader : NetworkBehaviour
         DisableQuickKeyInputs();
 
         moveInput = Vector2.zero;
+        wasUpPressed = false;
 
         if (isOwned && NetworkClient.active)
         {
@@ -264,6 +287,12 @@ public class PlayerInputReader : NetworkBehaviour
     private void CmdSetMoveInput(float input)
     {
         playerMove.SetMoveInput(input);
+    }
+
+    [Command]
+    private void CmdRequestUsePortal()
+    {
+        mapController.RequestUsePortal();
     }
 
     [Command]
