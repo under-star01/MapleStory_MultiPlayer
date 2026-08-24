@@ -6,7 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/1.Scene/CommonScene.unity
+    guid: f9880de2479de934684b1e631b91c97d
+  - enabled: 1
     path: Assets/1.Scene/0_MainTown.unity
     guid: 3a5dcb877cc3ae74a9eeeefa741d556d
+  - enabled: 1
+    path: Assets/1.Scene/1_BattleField.unity
+    guid: fe60d9229d6a732428633c7203be0fb7
+  - enabled: 1
+    path: Assets/1.Scene/2_BattleField.unity
+    guid: 51ff603c01a543c4f8ee96cd7fd93cbe
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

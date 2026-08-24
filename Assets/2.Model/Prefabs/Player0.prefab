@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 5726701553201237585}
   - component: {fileID: 2949302589284177834}
   - component: {fileID: 3761611756670745891}
+  - component: {fileID: 4844357769319987438}
   - component: {fileID: 549856490600395042}
   - component: {fileID: 6081832958655312243}
   - component: {fileID: 251517183009848918}
@@ -396,6 +397,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2615721f0ebbee4f85a2894504cd30f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocalPlayerUIBinder
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &4844357769319987438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 777d9d5504841f549b7bc6752f01a8e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMapController
   syncDirection: 0
   syncMode: 0
   syncInterval: 0

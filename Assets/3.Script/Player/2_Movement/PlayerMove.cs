@@ -1,6 +1,7 @@
 using System.Collections;
 using Mirror;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
@@ -295,7 +296,10 @@ public class PlayerMove : NetworkBehaviour
 
     private void CheckGround()
     {
-        groundHit = Physics2D.Raycast(
+        PhysicsScene2D physicsScene =
+            gameObject.scene.GetPhysicsScene2D();
+
+        groundHit = physicsScene.Raycast(
             groundCheck.position,
             Vector2.down,
             groundCheckDistance,
