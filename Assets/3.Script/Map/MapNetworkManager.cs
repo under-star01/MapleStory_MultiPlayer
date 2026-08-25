@@ -27,6 +27,13 @@ public class MapNetworkManager : NetworkManager
     [SerializeField]
     private MapId initialMapId = MapId.MainTown;
 
+    [Header("Map Transition")]
+    [SerializeField]
+    private MapTransitionUI mapTransitionUI;
+
+    [SerializeField]
+    private float cameraSettleDelay = 0.5f;
+
     private readonly Dictionary
         <NetworkConnectionToClient, PendingMapTransition>
         pendingTransitions = new();
@@ -201,16 +208,37 @@ public class MapNetworkManager : NetworkManager
         LoadTransitionMapMessage message)
     {
         StartCoroutine(
-            LoadTransitionMapAndNotifyServer(
+            BeginClientMapTransition(
                 message.MapId
             )
         );
     }
 
-    private IEnumerator
-        LoadTransitionMapAndNotifyServer(
-            MapId mapId)
+    private IEnumerator BeginClientMapTransition(
+    MapId mapId)
     {
+        if (!TryGetLocalInputReader(
+                out PlayerInputReader inputReader))
+        {
+            yield break;
+        }
+
+        if (mapTransitionUI == null)
+        {
+            Debug.LogError(
+                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
+                this
+            );
+
+            yield break;
+        }
+
+        // 전환 시작과 동시에 모든 플레이어 입력을 차단합니다.
+        inputReader.SetInputBlocked(true);
+
+        // 화면이 완전히 검게 된 다음 맵을 로드합니다.
+        yield return mapTransitionUI.FadeOut();
+
         yield return
             mapSceneManager.LoadClientMap(mapId);
 
@@ -218,6 +246,10 @@ public class MapNetworkManager : NetworkManager
                 mapId,
                 out string sceneName))
         {
+            // 로드에 실패하면 기존 화면으로 돌아가고 입력을 복구합니다.
+            yield return mapTransitionUI.FadeIn();
+
+            inputReader.SetInputBlocked(false);
             yield break;
         }
 
@@ -557,8 +589,8 @@ public class MapNetworkManager : NetworkManager
     }
 
     private IEnumerator CompleteClientMapTransition(
-        MapId previousMapId,
-        MapId currentMapId)
+    MapId previousMapId,
+    MapId currentMapId)
     {
         NetworkIdentity localPlayerIdentity =
             NetworkClient.localPlayer;
@@ -570,6 +602,7 @@ public class MapNetworkManager : NetworkManager
                 this
             );
 
+            yield return RecoverClientTransition();
             yield break;
         }
 
@@ -580,12 +613,21 @@ public class MapNetworkManager : NetworkManager
             localPlayer.GetComponent
                 <LocalPlayerCameraBinder>();
 
-        if (cameraBinder == null)
+        PlayerInputReader inputReader =
+            localPlayer.GetComponent
+                <PlayerInputReader>();
+
+        if (cameraBinder == null ||
+            inputReader == null)
         {
             Debug.LogError(
-                $"{nameof(LocalPlayerCameraBinder)}를 " +
+                "맵 전환에 필요한 플레이어 컴포넌트를 " +
                 "찾지 못했습니다.",
                 localPlayer
+            );
+
+            yield return RecoverClientTransition(
+                inputReader
             );
 
             yield break;
@@ -600,10 +642,74 @@ public class MapNetworkManager : NetworkManager
                 previousMapId
             );
 
+        if (cameraSettleDelay > 0f)
+        {
+            yield return new WaitForSecondsRealtime(
+                cameraSettleDelay
+            );
+        }
+
+        if (mapTransitionUI != null)
+        {
+            yield return mapTransitionUI.FadeIn();
+        }
+        else
+        {
+            Debug.LogError(
+                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
+                this
+            );
+        }
+
+        inputReader.SetInputBlocked(false);
+
         Debug.Log(
             $"클라이언트 맵 전환 완료: " +
             $"{previousMapId} → {currentMapId}",
             this
         );
+    }
+
+    private bool TryGetLocalInputReader(
+    out PlayerInputReader inputReader)
+    {
+        inputReader = null;
+
+        NetworkIdentity localPlayer =
+            NetworkClient.localPlayer;
+
+        if (localPlayer == null)
+        {
+            Debug.LogError(
+                "로컬 플레이어를 찾지 못했습니다.",
+                this
+            );
+
+            return false;
+        }
+
+        inputReader =
+            localPlayer.GetComponent<PlayerInputReader>();
+
+        if (inputReader != null)
+            return true;
+
+        Debug.LogError(
+            $"{nameof(PlayerInputReader)}를 찾지 못했습니다.",
+            localPlayer
+        );
+
+        return false;
+    }
+
+    private IEnumerator RecoverClientTransition(
+    PlayerInputReader inputReader = null)
+    {
+        if (mapTransitionUI != null)
+        {
+            yield return mapTransitionUI.FadeIn();
+        }
+
+        inputReader?.SetInputBlocked(false);
     }
 }

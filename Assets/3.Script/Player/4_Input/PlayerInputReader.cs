@@ -34,6 +34,7 @@ public class PlayerInputReader : NetworkBehaviour
 
     private Vector2 moveInput;
     private bool inputEnabled;
+    private bool inputBlocked;
     private bool wasUpPressed;
 
     private void Awake()
@@ -58,7 +59,7 @@ public class PlayerInputReader : NetworkBehaviour
     {
         base.OnStartAuthority();
 
-        EnableInputs();
+        RefreshInputState();
     }
 
     /// <summary>
@@ -76,9 +77,26 @@ public class PlayerInputReader : NetworkBehaviour
         DisableInputs();
     }
 
+    /// <summary>
+    /// 맵 전환 등으로 로컬 플레이어 입력을
+    /// 일시적으로 차단하거나 다시 허용합니다.
+    /// </summary>
+    public void SetInputBlocked(bool blocked)
+    {
+        if (!isOwned)
+            return;
+
+        inputBlocked = blocked;
+
+        RefreshInputState();
+    }
+
     private void OnMovePerformed(
         InputAction.CallbackContext context)
     {
+        if (inputBlocked)
+            return;
+
         moveInput =
             context.ReadValue<Vector2>();
 
@@ -117,6 +135,9 @@ public class PlayerInputReader : NetworkBehaviour
     private void OnQuickKeyPerformed(
         InputAction.CallbackContext context)
     {
+        if (inputBlocked)
+            return;
+
         if (!quickKeyByAction.TryGetValue(
                 context.action,
                 out QuickKey key))
@@ -310,6 +331,19 @@ public class PlayerInputReader : NetworkBehaviour
             skillId,
             inputDirection
         );
+    }
+
+    private void RefreshInputState()
+    {
+        if (isOwned &&
+            isActiveAndEnabled &&
+            !inputBlocked)
+        {
+            EnableInputs();
+            return;
+        }
+
+        DisableInputs();
     }
 
 #if UNITY_EDITOR
