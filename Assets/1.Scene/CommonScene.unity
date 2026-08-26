@@ -457,6 +457,7 @@ GameObject:
   - component: {fileID: 96340615}
   - component: {fileID: 96340617}
   - component: {fileID: 96340618}
+  - component: {fileID: 96340619}
   m_Layer: 0
   m_Name: CM_Camera
   m_TagString: Untagged
@@ -516,7 +517,7 @@ Transform:
   m_GameObject: {fileID: 96340614}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.5199995, y: 0.79, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -573,6 +574,18 @@ MonoBehaviour:
     MaxWindowSize: 0
     Padding: 0
   m_LegacyMaxWindowSize: -2
+--- !u!114 &96340619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 96340614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a8a05de0ac134f4f9d01bef6b9da077, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePixelPerfect
 --- !u!1 &110605012
 GameObject:
   m_ObjectHideFlags: 0
@@ -3743,6 +3756,7 @@ GameObject:
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
   - component: {fileID: 519420033}
+  - component: {fileID: 519420034}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3837,7 +3851,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 5.4
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -3862,7 +3876,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.5199995, y: 0.79, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3900,6 +3914,30 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!114 &519420034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c88f5cead0c0b2a4eb05b5900433f8d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.PixelPerfectCamera
+  m_ComponentVersion: 1
+  m_AssetsPPU: 100
+  m_RefResolutionX: 1920
+  m_RefResolutionY: 1080
+  m_CropFrame: 0
+  m_GridSnapping: 0
+  m_FilterMode: 0
+  m_UpscaleRT: 0
+  m_PixelSnapping: 0
+  m_CropFrameX: 0
+  m_CropFrameY: 0
+  m_StretchFill: 0
 --- !u!1 &523406455
 GameObject:
   m_ObjectHideFlags: 0
@@ -9299,6 +9337,76 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa30b9dd0f8d2c24082fc7ee8795a2aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BasicActionSlotUI
+--- !u!1 &1270049747
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1270049748}
+  - component: {fileID: 1270049749}
+  m_Layer: 0
+  m_Name: DamageNumberManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1270049748
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270049747}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1270049749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270049747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06cbe6076d1f9864bbd4db136a414af5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DamageNumberManager
+  viewPrefab: {fileID: 3036962194593623170, guid: 46912318f47a4ac4989a7801abdfa09b, type: 3}
+  poolRoot: {fileID: 1270049748}
+  normalDigits:
+  - {fileID: 8220478643364759764, guid: 51af5d8d21fd4a547b980dc4b9213494, type: 3}
+  - {fileID: -2506982752417007533, guid: cbd02f01d414a934e872b0f1e7573493, type: 3}
+  - {fileID: -5676457869699514710, guid: 420799620da908a48873e741f67ae0fa, type: 3}
+  - {fileID: -3961775761754141102, guid: c1205fb4a9b6c294094e0266428cde02, type: 3}
+  - {fileID: 2138884559230905396, guid: 24f4eda1bbe7bea40a66e57491826b72, type: 3}
+  - {fileID: -6330092088382313172, guid: f7a0c33a0c8238b4eb9ade5e217357d8, type: 3}
+  - {fileID: -8498064818289873176, guid: 7f0bfdbb80695ad45bcbf20abea2f09b, type: 3}
+  - {fileID: -7061781716242403909, guid: bb82f8aa1d7f7a54a87a889c7ff6377b, type: 3}
+  - {fileID: -2997727630736120373, guid: 6c940c6b77e055740ad04a2172439dc2, type: 3}
+  - {fileID: 6555981151710420321, guid: 32a55ec477a6f604cbec9141ef0fb9a0, type: 3}
+  criticalDigits:
+  - {fileID: -8443192082262584894, guid: 008b9ee9a752a154d85fdfa965c3fd60, type: 3}
+  - {fileID: -3103492006421407440, guid: c8c8e2319f47bfd4ab8dc4efea51253d, type: 3}
+  - {fileID: 558707204563128341, guid: de527239245ab7942805e612dda106db, type: 3}
+  - {fileID: -7896485606929530494, guid: 147aa64e43a147c47916f9dcbecf38e9, type: 3}
+  - {fileID: 7877428898435838846, guid: 51b08247bf3e551478071efbdd573ba0, type: 3}
+  - {fileID: 8632252542385223705, guid: f088ffb9227f0d942b28d270da215d56, type: 3}
+  - {fileID: -6503940105177853665, guid: 1b347d46c1dcc8c41a67a90981d2fb63, type: 3}
+  - {fileID: 9082386270844175242, guid: be6c5ad88e592a840a5de0b455403ebe, type: 3}
+  - {fileID: 2962109155988007794, guid: ccc3769e4d3f56742bada4b4edf35596, type: 3}
+  - {fileID: 2504419545378695887, guid: 7f9090fdae86d564c9b94c2cfead95f4, type: 3}
+  hitDisplayInterval: 0.1
+  initialPoolSize: 20
 --- !u!1 &1278476279
 GameObject:
   m_ObjectHideFlags: 0
@@ -14248,3 +14356,4 @@ SceneRoots:
   - {fileID: 277412736}
   - {fileID: 297776883}
   - {fileID: 1965684449}
+  - {fileID: 1270049748}

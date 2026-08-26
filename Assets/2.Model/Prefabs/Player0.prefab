@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7131267034442247628}
   - component: {fileID: 2626634744441685459}
+  - component: {fileID: 3315450053575657479}
   - component: {fileID: 7585901890209695034}
   - component: {fileID: 8309249869546044127}
   - component: {fileID: 3825715892521762776}
@@ -93,7 +94,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 391
+  m_SortingOrder: 0
   m_Sprite: {fileID: -908235099407151567, guid: fb5be86053291da4ba6f72f3b4203dea, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -105,6 +106,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!210 &3315450053575657479
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 375
+  m_SortAtRoot: 0
 --- !u!95 &7585901890209695034
 Animator:
   serializedVersion: 7
