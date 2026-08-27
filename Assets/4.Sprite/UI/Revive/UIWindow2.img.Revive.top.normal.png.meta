@@ -1,0 +1,832 @@
+fileFormatVersion: 2
+guid: b4010004b668f894ab8f7d0c07902c13
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6179577403280500492
+    second: UIWindow2.img.Revive.top.normal_0
+  - first:
+      213: -8189778381646416003
+    second: UIWindow2.img.Revive.top.normal_1
+  - first:
+      213: -6962923369311939306
+    second: UIWindow2.img.Revive.top.normal_2
+  - first:
+      213: 8099264135903485545
+    second: UIWindow2.img.Revive.top.normal_3
+  - first:
+      213: 4903887648464835542
+    second: UIWindow2.img.Revive.top.normal_4
+  - first:
+      213: -7070873727386501324
+    second: UIWindow2.img.Revive.top.normal_5
+  - first:
+      213: 5211450258109869823
+    second: UIWindow2.img.Revive.top.normal_6
+  - first:
+      213: 2694828520133651872
+    second: UIWindow2.img.Revive.top.normal_7
+  - first:
+      213: -7865043901502676497
+    second: UIWindow2.img.Revive.top.normal_8
+  - first:
+      213: -3671973586123056169
+    second: UIWindow2.img.Revive.top.normal_9
+  - first:
+      213: 2644796380169489281
+    second: UIWindow2.img.Revive.top.normal_10
+  - first:
+      213: 2639106857488168280
+    second: UIWindow2.img.Revive.top.normal_11
+  - first:
+      213: -1351459337002871824
+    second: UIWindow2.img.Revive.top.normal_12
+  - first:
+      213: 84769967843459298
+    second: UIWindow2.img.Revive.top.normal_13
+  - first:
+      213: 7702576675869230063
+    second: UIWindow2.img.Revive.top.normal_14
+  - first:
+      213: -6036902057617979660
+    second: UIWindow2.img.Revive.top.normal_15
+  - first:
+      213: 4715630292800816104
+    second: UIWindow2.img.Revive.top.normal_16
+  - first:
+      213: 2085281536613463714
+    second: UIWindow2.img.Revive.top.normal_17
+  - first:
+      213: -3775906403682672525
+    second: UIWindow2.img.Revive.top.normal_18
+  - first:
+      213: -7024645705914046005
+    second: UIWindow2.img.Revive.top.normal_19
+  - first:
+      213: -987620526515795583
+    second: UIWindow2.img.Revive.top.normal_20
+  - first:
+      213: -429809390869843320
+    second: UIWindow2.img.Revive.top.normal_21
+  - first:
+      213: 8143724516809415613
+    second: UIWindow2.img.Revive.top.normal_22
+  - first:
+      213: -6721117489148280596
+    second: UIWindow2.img.Revive.top.normal_23
+  - first:
+      213: -5599904228685445364
+    second: UIWindow2.img.Revive.top.normal_24
+  - first:
+      213: 7291127995917973646
+    second: UIWindow2.img.Revive.top.normal_25
+  - first:
+      213: -7722851813327198506
+    second: UIWindow2.img.Revive.top.normal_26
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 47
+        width: 34
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c07a09058e442c550800000000000000
+      internalID: 6179577403280500492
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_1
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 47
+        width: 109
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d77bac404ff085e80800000000000000
+      internalID: -8189778381646416003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_2
+      rect:
+        serializedVersion: 2
+        x: 141
+        y: 47
+        width: 83
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61555e5361abe5f90800000000000000
+      internalID: -6962923369311939306
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_3
+      rect:
+        serializedVersion: 2
+        x: 222
+        y: 47
+        width: 83
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96e9692e1dd566070800000000000000
+      internalID: 8099264135903485545
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 15
+        width: 41
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d31c2995db1e0440800000000000000
+      internalID: 4903887648464835542
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_5
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 3
+        width: 9
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43f3c7bdec53fdd90800000000000000
+      internalID: -7070873727386501324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_6
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 0
+        width: 19
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ffea147f56ac25840800000000000000
+      internalID: 5211450258109869823
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_7
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 1
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ad6821e244f56520800000000000000
+      internalID: 2694828520133651872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_8
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 18
+        width: 10
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe1a41c0e30c9d290800000000000000
+      internalID: -7865043901502676497
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_9
+      rect:
+        serializedVersion: 2
+        x: 43
+        y: 0
+        width: 12
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7db94867a778a0dc0800000000000000
+      internalID: -3671973586123056169
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_10
+      rect:
+        serializedVersion: 2
+        x: 51
+        y: 16
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18bcd378b4434b420800000000000000
+      internalID: 2644796380169489281
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_11
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 0
+        width: 23
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 85531ec44bdff9420800000000000000
+      internalID: 2639106857488168280
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_12
+      rect:
+        serializedVersion: 2
+        x: 69
+        y: 16
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f31f81b4e6ae3de0800000000000000
+      internalID: -1351459337002871824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_13
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 0
+        width: 15
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2e04eec26d92d2100800000000000000
+      internalID: 84769967843459298
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_14
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 18
+        width: 10
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe3056c3dac05ea60800000000000000
+      internalID: 7702576675869230063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_15
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 0
+        width: 16
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f60bdf309d983ca0800000000000000
+      internalID: -6036902057617979660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_16
+      rect:
+        serializedVersion: 2
+        x: 97
+        y: 0
+        width: 27
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e3c67e44c8417140800000000000000
+      internalID: 4715630292800816104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_17
+      rect:
+        serializedVersion: 2
+        x: 111
+        y: 0
+        width: 12
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a6b68e528860fc10800000000000000
+      internalID: 2085281536613463714
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_18
+      rect:
+        serializedVersion: 2
+        x: 123
+        y: 0
+        width: 18
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3702f57a129499bc0800000000000000
+      internalID: -3775906403682672525
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_19
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 16
+        width: 14
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc9250ad2f1738e90800000000000000
+      internalID: -7024645705914046005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_20
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 15
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18944202d544b42f0800000000000000
+      internalID: -987620526515795583
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_21
+      rect:
+        serializedVersion: 2
+        x: 155
+        y: 16
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8827310e2a2090af0800000000000000
+      internalID: -429809390869843320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_22
+      rect:
+        serializedVersion: 2
+        x: 168
+        y: 15
+        width: 13
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dbb901dfc42540170800000000000000
+      internalID: 8143724516809415613
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_23
+      rect:
+        serializedVersion: 2
+        x: 181
+        y: 16
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce0c6ade04bc9b2a0800000000000000
+      internalID: -6721117489148280596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_24
+      rect:
+        serializedVersion: 2
+        x: 197
+        y: 16
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c070ff806c42942b0800000000000000
+      internalID: -5599904228685445364
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_25
+      rect:
+        serializedVersion: 2
+        x: 210
+        y: 16
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e88b890484a4f2560800000000000000
+      internalID: 7291127995917973646
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: UIWindow2.img.Revive.top.normal_26
+      rect:
+        serializedVersion: 2
+        x: 223
+        y: 16
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d6a6a5713be2d490800000000000000
+      internalID: -7722851813327198506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      UIWindow2.img.Revive.top.normal_0: 6179577403280500492
+      UIWindow2.img.Revive.top.normal_1: -8189778381646416003
+      UIWindow2.img.Revive.top.normal_10: 2644796380169489281
+      UIWindow2.img.Revive.top.normal_11: 2639106857488168280
+      UIWindow2.img.Revive.top.normal_12: -1351459337002871824
+      UIWindow2.img.Revive.top.normal_13: 84769967843459298
+      UIWindow2.img.Revive.top.normal_14: 7702576675869230063
+      UIWindow2.img.Revive.top.normal_15: -6036902057617979660
+      UIWindow2.img.Revive.top.normal_16: 4715630292800816104
+      UIWindow2.img.Revive.top.normal_17: 2085281536613463714
+      UIWindow2.img.Revive.top.normal_18: -3775906403682672525
+      UIWindow2.img.Revive.top.normal_19: -7024645705914046005
+      UIWindow2.img.Revive.top.normal_2: -6962923369311939306
+      UIWindow2.img.Revive.top.normal_20: -987620526515795583
+      UIWindow2.img.Revive.top.normal_21: -429809390869843320
+      UIWindow2.img.Revive.top.normal_22: 8143724516809415613
+      UIWindow2.img.Revive.top.normal_23: -6721117489148280596
+      UIWindow2.img.Revive.top.normal_24: -5599904228685445364
+      UIWindow2.img.Revive.top.normal_25: 7291127995917973646
+      UIWindow2.img.Revive.top.normal_26: -7722851813327198506
+      UIWindow2.img.Revive.top.normal_3: 8099264135903485545
+      UIWindow2.img.Revive.top.normal_4: 4903887648464835542
+      UIWindow2.img.Revive.top.normal_5: -7070873727386501324
+      UIWindow2.img.Revive.top.normal_6: 5211450258109869823
+      UIWindow2.img.Revive.top.normal_7: 2694828520133651872
+      UIWindow2.img.Revive.top.normal_8: -7865043901502676497
+      UIWindow2.img.Revive.top.normal_9: -3671973586123056169
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

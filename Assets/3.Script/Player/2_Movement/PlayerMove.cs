@@ -1,7 +1,6 @@
 using System.Collections;
 using Mirror;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
@@ -21,6 +20,16 @@ public class PlayerMove : NetworkBehaviour
     [SerializeField]
     private float maxFallSpeed = 20f;
 
+    [Header("Knockback")]
+    [SerializeField]
+    private float knockbackForceX = 4f;
+
+    [SerializeField]
+    private float knockbackForceY = 4f;
+
+    [SerializeField]
+    private float knockbackRecoverySpeed = 12f;
+
     [Header("Ground Check")]
     [SerializeField]
     private Transform groundCheck;
@@ -39,6 +48,8 @@ public class PlayerMove : NetworkBehaviour
     private Collider2D ignoredPlatform;
 
     private float moveInput;
+    private float knockbackVelocityX;
+
     private bool jumpRequested;
     private bool movementEnabled = true;
 
@@ -78,31 +89,19 @@ public class PlayerMove : NetworkBehaviour
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        playerCollider = GetComponent<Collider2D>();
+        rb =
+            GetComponent<Rigidbody2D>();
+
+        spriteRenderer =
+            GetComponent<SpriteRenderer>();
+
+        playerCollider =
+            GetComponent<Collider2D>();
     }
 
     private void OnDisable()
     {
         RestoreIgnoredPlatformCollision();
-    }
-
-    private void RestoreIgnoredPlatformCollision()
-    {
-        if (ignoredPlatform == null ||
-            playerCollider == null)
-        {
-            return;
-        }
-
-        Physics2D.IgnoreCollision(
-            playerCollider,
-            ignoredPlatform,
-            false
-        );
-
-        ignoredPlatform = null;
     }
 
     public override void OnStartServer()
@@ -111,18 +110,26 @@ public class PlayerMove : NetworkBehaviour
 
         rb.simulated = true;
 
-        // Prefab에 설정된 초기 방향을 서버 상태로 사용합니다.
-        facingRight = spriteRenderer.flipX;
-        ApplyFacingDirection(facingRight);
+        facingRight =
+            spriteRenderer.flipX;
+
+        ApplyFacingDirection(
+            facingRight
+        );
     }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
 
-        ApplyFacingDirection(facingRight);
+        ApplyFacingDirection(
+            facingRight
+        );
 
-        // 순수 클라이언트는 서버의 물리 결과만 전달받습니다.
+        /*
+         * 순수 클라이언트는 물리를 계산하지 않고
+         * 서버의 물리 결과만 표시합니다.
+         */
         if (!isServer)
         {
             rb.simulated = false;
@@ -137,6 +144,7 @@ public class PlayerMove : NetworkBehaviour
         CheckGround();
         ApplyMovement();
         ApplyJump();
+        RecoverKnockback();
         ClampFallSpeed();
     }
 
@@ -144,12 +152,16 @@ public class PlayerMove : NetworkBehaviour
     /// 서버에서 플레이어의 좌우 이동 입력을 설정합니다.
     /// </summary>
     [Server]
-    public void SetMoveInput(float input)
+    public void SetMoveInput(
+        float input)
     {
         moveInput =
-            Mathf.Clamp(input, -1f, 1f);
+            Mathf.Clamp(
+                input,
+                -1f,
+                1f
+            );
 
-        // 이동이 잠긴 동안에는 방향을 바꾸지 않습니다.
         if (!movementEnabled)
             return;
 
@@ -167,11 +179,13 @@ public class PlayerMove : NetworkBehaviour
             return false;
 
         jumpRequested = true;
+
         return true;
     }
 
     /// <summary>
-    /// 현재 밟고 있는 단방향 발판을 아래로 통과합니다.
+    /// 현재 밟고 있는 단방향 발판을
+    /// 아래로 통과합니다.
     /// </summary>
     [Server]
     public bool RequestDropDown()
@@ -189,7 +203,8 @@ public class PlayerMove : NetworkBehaviour
     }
 
     /// <summary>
-    /// 외부 기능에서 플레이어의 이동 가능 여부를 설정합니다.
+    /// 외부 기능에서 플레이어의
+    /// 이동 가능 여부를 설정합니다.
     /// </summary>
     [Server]
     public void SetMovementEnabled(
@@ -200,7 +215,6 @@ public class PlayerMove : NetworkBehaviour
 
         if (enabled)
         {
-            // 공격이 끝난 순간, 공격 중 마지막으로 입력한 방향을 적용합니다.
             UpdateDirection();
             return;
         }
@@ -213,15 +227,49 @@ public class PlayerMove : NetworkBehaviour
         }
     }
 
+    /// <summary>
+    /// 공격자의 반대 방향과 위쪽으로
+    /// 피격 넉백을 적용합니다.
+    /// </summary>
+    [Server]
+    public void ApplyKnockback(
+        Vector2 attackerPosition)
+    {
+        float direction =
+            transform.position.x >=
+            attackerPosition.x
+                ? 1f
+                : -1f;
+
+        jumpRequested = false;
+        IsGrounded = false;
+
+        knockbackVelocityX =
+            direction * knockbackForceX;
+
+        rb.linearVelocity =
+            new Vector2(
+                moveInput * moveSpeed +
+                knockbackVelocityX,
+                knockbackForceY
+            );
+    }
+
     private void ApplyMovement()
     {
         if (!movementEnabled)
             return;
 
-        rb.linearVelocity = new Vector2(
-            moveInput * moveSpeed,
-            rb.linearVelocity.y
-        );
+        /*
+         * 기존 이동 속도에 남아 있는
+         * 넉백 속도를 더합니다.
+         */
+        rb.linearVelocity =
+            new Vector2(
+                moveInput * moveSpeed +
+                knockbackVelocityX,
+                rb.linearVelocity.y
+            );
     }
 
     private void ApplyJump()
@@ -229,10 +277,11 @@ public class PlayerMove : NetworkBehaviour
         if (!jumpRequested)
             return;
 
-        rb.linearVelocity = new Vector2(
-            rb.linearVelocity.x,
-            0f
-        );
+        rb.linearVelocity =
+            new Vector2(
+                rb.linearVelocity.x,
+                0f
+            );
 
         rb.AddForce(
             Vector2.up * jumpForce,
@@ -243,41 +292,70 @@ public class PlayerMove : NetworkBehaviour
         IsGrounded = false;
     }
 
+    /// <summary>
+    /// 수평 넉백 속도를 서서히 0으로 복구합니다.
+    /// </summary>
+    private void RecoverKnockback()
+    {
+        knockbackVelocityX =
+            Mathf.MoveTowards(
+                knockbackVelocityX,
+                0f,
+                knockbackRecoverySpeed *
+                Time.fixedDeltaTime
+            );
+    }
+
     private void ClampFallSpeed()
     {
-        if (rb.linearVelocity.y >= -maxFallSpeed)
+        if (rb.linearVelocity.y >=
+            -maxFallSpeed)
+        {
             return;
+        }
 
-        rb.linearVelocity = new Vector2(
-            rb.linearVelocity.x,
-            -maxFallSpeed
-        );
+        rb.linearVelocity =
+            new Vector2(
+                rb.linearVelocity.x,
+                -maxFallSpeed
+            );
     }
 
     private void StopHorizontalMovement()
     {
-        rb.linearVelocity = new Vector2(
-            0f,
-            rb.linearVelocity.y
-        );
+        knockbackVelocityX = 0f;
+
+        rb.linearVelocity =
+            new Vector2(
+                0f,
+                rb.linearVelocity.y
+            );
     }
 
     private void UpdateDirection()
     {
-        if (Mathf.Approximately(moveInput, 0f))
+        if (Mathf.Approximately(
+                moveInput,
+                0f))
+        {
             return;
+        }
 
         bool newFacingRight =
             moveInput > 0f;
 
-        if (facingRight == newFacingRight)
+        if (facingRight ==
+            newFacingRight)
+        {
             return;
+        }
 
-        facingRight = newFacingRight;
+        facingRight =
+            newFacingRight;
 
-        // Dedicated Server에서는 화면이 없지만,
-        // Host 화면에는 즉시 반영되도록 직접 적용합니다.
-        ApplyFacingDirection(facingRight);
+        ApplyFacingDirection(
+            facingRight
+        );
     }
 
     private void ApplyFacingDirection(
@@ -291,20 +369,24 @@ public class PlayerMove : NetworkBehaviour
         bool oldValue,
         bool newValue)
     {
-        ApplyFacingDirection(newValue);
+        ApplyFacingDirection(
+            newValue
+        );
     }
 
     private void CheckGround()
     {
         PhysicsScene2D physicsScene =
-            gameObject.scene.GetPhysicsScene2D();
+            gameObject.scene
+                .GetPhysicsScene2D();
 
-        groundHit = physicsScene.Raycast(
-            groundCheck.position,
-            Vector2.down,
-            groundCheckDistance,
-            groundLayer
-        );
+        groundHit =
+            physicsScene.Raycast(
+                groundCheck.position,
+                Vector2.down,
+                groundCheckDistance,
+                groundLayer
+            );
 
         IsGrounded =
             ignoredPlatform == null &&
@@ -326,20 +408,39 @@ public class PlayerMove : NetworkBehaviour
 
         if (rb.linearVelocity.y > -1f)
         {
-            rb.linearVelocity = new Vector2(
-                rb.linearVelocity.x,
-                -1f
-            );
+            rb.linearVelocity =
+                new Vector2(
+                    rb.linearVelocity.x,
+                    -1f
+                );
         }
 
         while (platform != null &&
                playerCollider.bounds.max.y >=
                platform.bounds.min.y)
         {
-            yield return new WaitForFixedUpdate();
+            yield return
+                new WaitForFixedUpdate();
         }
 
         RestoreIgnoredPlatformCollision();
+    }
+
+    private void RestoreIgnoredPlatformCollision()
+    {
+        if (ignoredPlatform == null ||
+            playerCollider == null)
+        {
+            return;
+        }
+
+        Physics2D.IgnoreCollision(
+            playerCollider,
+            ignoredPlatform,
+            false
+        );
+
+        ignoredPlatform = null;
     }
 
     /// <summary>
@@ -347,16 +448,22 @@ public class PlayerMove : NetworkBehaviour
     /// 기존 물리 상태를 초기화합니다.
     /// </summary>
     [Server]
-    public void Teleport(Vector2 position)
+    public void Teleport(
+        Vector2 position)
     {
         RestoreIgnoredPlatformCollision();
 
         moveInput = 0f;
+        knockbackVelocityX = 0f;
+
         jumpRequested = false;
         IsGrounded = false;
 
-        rb.linearVelocity = Vector2.zero;
-        rb.position = position;
+        rb.linearVelocity =
+            Vector2.zero;
+
+        rb.position =
+            position;
     }
 
 #if UNITY_EDITOR
@@ -368,7 +475,8 @@ public class PlayerMove : NetworkBehaviour
         Gizmos.DrawLine(
             groundCheck.position,
             groundCheck.position +
-            Vector3.down * groundCheckDistance
+            Vector3.down *
+            groundCheckDistance
         );
     }
 #endif

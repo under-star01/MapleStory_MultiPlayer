@@ -7,6 +7,7 @@ public class LocalPlayerContext
     public PlayerMove Move { get; }
     public PlayerSkillController Skill { get; }
     public PlayerQuickSlotController QuickSlot { get; }
+    public PlayerHealth Health { get; }
 
     public LocalPlayerContext(GameObject player)
     {
@@ -27,6 +28,9 @@ public class LocalPlayerContext
 
         QuickSlot =
             player.GetComponent<PlayerQuickSlotController>();
+
+        Health =
+            player.GetComponent<PlayerHealth>();
 
         ValidateComponents();
     }
@@ -53,6 +57,14 @@ public class LocalPlayerContext
         {
             Debug.LogError(
                 $"{nameof(PlayerQuickSlotController)}를 찾지 못했습니다.",
+                Player
+            );
+        }
+
+        if (Health == null)
+        {
+            Debug.LogError(
+                $"{nameof(PlayerHealth)}를 찾지 못했습니다.",
                 Player
             );
         }
