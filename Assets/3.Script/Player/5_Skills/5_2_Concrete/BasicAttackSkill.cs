@@ -163,6 +163,7 @@ public class BasicAttackSkill : PlayerSkillBase
              * 합산값을 한 번만 전달합니다.
              */
             monsterHealth.TakeDamage(
+                activeContext.User,
                 totalDamage,
                 hitResults
             );

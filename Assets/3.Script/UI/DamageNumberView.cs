@@ -13,7 +13,7 @@ public class DamageNumberView : MonoBehaviour
 
     [Header("Layout")]
     [SerializeField]
-    private float characterSpacing = 0.02f;
+    private float characterSpacing = -0.02f;
 
     [Header("Animation")]
     [SerializeField]

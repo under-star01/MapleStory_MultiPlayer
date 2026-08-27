@@ -166,10 +166,10 @@ GameObject:
   - component: {fileID: 8171315838047312002}
   - component: {fileID: 8438902771497395016}
   - component: {fileID: 3249836855680481855}
-  - component: {fileID: 951160195513913829}
   - component: {fileID: 3364713929163096626}
   - component: {fileID: 9081464459556445056}
   - component: {fileID: 8347225048867986934}
+  - component: {fileID: 359938582165374533}
   m_Layer: 8
   m_Name: 1_Monster
   m_TagString: Untagged
@@ -192,6 +192,7 @@ Transform:
   m_Children:
   - {fileID: 4689004072574683658}
   - {fileID: 3378214693730910372}
+  - {fileID: 8778949070582087974}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3213769855824566996
@@ -400,23 +401,6 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
---- !u!114 &951160195513913829
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4356502028530972177}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  clientAuthority: 0
-  animator: {fileID: 7365698380428770838}
 --- !u!114 &3364713929163096626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -447,6 +431,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5f1b340ed5b34b42b75290c2f9c3950, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterHealthBarUI
+  hpGaugeRoot: {fileID: 8374073669640464373}
   fillImage: {fileID: 4940271884403466914}
 --- !u!114 &8347225048867986934
 MonoBehaviour:
@@ -461,6 +446,63 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterDamageNumberPresenter
   damageNumberPoint: {fileID: 3378214693730910372}
+--- !u!114 &359938582165374533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4356502028530972177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edb9e26ede7fb72488fac4eb5014ef1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterMovement
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  moveSpeed: 1.2
+  minMoveTime: 0.7
+  maxMoveTime: 2.5
+  minWaitTime: 0.4
+  maxWaitTime: 1.8
+  frontGroundCheck: {fileID: 8778949070582087974}
+  groundCheckDistance: 0.2
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  spriteFacesRight: 0
+--- !u!1 &6063980236177404753
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8778949070582087974}
+  m_Layer: 8
+  m_Name: FrontGroundCheck
+  m_TagString: Untagged
+  m_Icon: {fileID: -5397416234189338067, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8778949070582087974
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6063980236177404753}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.2, y: -0.236, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3528586887613098812}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7236366071382119476
 GameObject:
   m_ObjectHideFlags: 0

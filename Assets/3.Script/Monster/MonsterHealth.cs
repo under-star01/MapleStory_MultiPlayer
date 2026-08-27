@@ -25,6 +25,7 @@ public class MonsterHealth : NetworkBehaviour
 
     private Collider2D monsterCollider;
     private Animator animator;
+    private MonsterMovement monsterMovement;
 
     public int MaxHp => maxHp;
     public int CurrentHp => currentHp;
@@ -39,6 +40,12 @@ public class MonsterHealth : NetworkBehaviour
     public event Action<DamageHitResult[]>
         DamageReceived;
 
+    private static readonly int HitHash =
+    Animator.StringToHash("Hit");
+
+    private static readonly int DieHash =
+        Animator.StringToHash("Die");
+
     private void Awake()
     {
         monsterCollider =
@@ -46,6 +53,9 @@ public class MonsterHealth : NetworkBehaviour
 
         animator =
             GetComponent<Animator>();
+
+        monsterMovement =
+            GetComponent<MonsterMovement>();
     }
 
     public override void OnStartServer()
@@ -72,8 +82,9 @@ public class MonsterHealth : NetworkBehaviour
     /// </summary>
     [Server]
     public void TakeDamage(
-        int totalDamage,
-        DamageHitResult[] hitResults)
+    GameObject attacker,
+    int totalDamage,
+    DamageHitResult[] hitResults)
     {
         if (isDead)
             return;
@@ -88,18 +99,21 @@ public class MonsterHealth : NetworkBehaviour
         }
 
         /*
-         * 멀티 히트여도 실제 HP 변경은
-         * 이 한 번의 대입으로 처리됩니다.
+         * 자신을 공격한 플레이어를 기억하고
+         * 공격 모드로 전환합니다.
          */
+        if (attacker != null)
+        {
+            monsterMovement?.EnterAttackMode(
+                attacker.transform
+            );
+        }
+
         currentHp = Mathf.Max(
             currentHp - totalDamage,
             0
         );
 
-        /*
-         * 개별 타격 결과는 HP 처리와 별개로
-         * 모든 클라이언트에 전달합니다.
-         */
         RpcNotifyDamage(hitResults);
 
         if (currentHp <= 0)
@@ -108,10 +122,6 @@ public class MonsterHealth : NetworkBehaviour
             return;
         }
 
-        /*
-         * 타수가 여러 개여도 하나의 공격이므로
-         * 피격 애니메이션은 한 번만 재생합니다.
-         */
         RpcPlayHitAnimation();
     }
 
@@ -125,13 +135,14 @@ public class MonsterHealth : NetworkBehaviour
     {
         DamageHitResult[] hitResults =
         {
-            new DamageHitResult(
-                damage,
-                false
-            )
-        };
+        new DamageHitResult(
+            damage,
+            false
+        )
+    };
 
         TakeDamage(
+            null,
             damage,
             hitResults
         );
@@ -144,6 +155,12 @@ public class MonsterHealth : NetworkBehaviour
             return;
 
         isDead = true;
+
+        /*
+         * 패트롤을 중단하고 Rigidbody2D를
+         * Kinematic으로 바꿔 현재 위치에 고정합니다.
+         */
+        monsterMovement?.OnDeath();
 
         monsterCollider.enabled = false;
 
@@ -166,13 +183,17 @@ public class MonsterHealth : NetworkBehaviour
     [ClientRpc]
     private void RpcPlayHitAnimation()
     {
-        animator.SetTrigger("Hit");
+        if (isDead)
+            return;
+
+        animator.SetTrigger(HitHash);
     }
 
     [ClientRpc]
     private void RpcPlayDieAnimation()
     {
-        animator.SetTrigger("Die");
+        animator.ResetTrigger(HitHash);
+        animator.SetTrigger(DieHash);
     }
 
     private IEnumerator DestroyAfterDelay()

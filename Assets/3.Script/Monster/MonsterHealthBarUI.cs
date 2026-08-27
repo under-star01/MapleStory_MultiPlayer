@@ -6,6 +6,9 @@ public class MonsterHealthBarUI : MonoBehaviour
 {
     [Header("References")]
     [SerializeField]
+    private GameObject hpGaugeRoot;
+
+    [SerializeField]
     private Image fillImage;
 
     private MonsterHealth monsterHealth;
@@ -20,6 +23,9 @@ public class MonsterHealthBarUI : MonoBehaviour
     {
         monsterHealth.HealthChanged +=
             UpdateHealthBar;
+
+        monsterHealth.DamageReceived +=
+            ShowHealthBar;
     }
 
     private void Start()
@@ -28,12 +34,33 @@ public class MonsterHealthBarUI : MonoBehaviour
             monsterHealth.CurrentHp,
             monsterHealth.MaxHp
         );
+
+        /*
+         * 생성 직후에는 체력바를 숨깁니다.
+         * 스크립트가 붙은 몬스터 루트는 끄지 않습니다.
+         */
+        SetHealthBarVisible(false);
     }
 
     private void OnDisable()
     {
+        if (monsterHealth == null)
+            return;
+
         monsterHealth.HealthChanged -=
             UpdateHealthBar;
+
+        monsterHealth.DamageReceived -=
+            ShowHealthBar;
+    }
+
+    private void ShowHealthBar(
+        DamageHitResult[] hitResults)
+    {
+        if (monsterHealth.IsDead)
+            return;
+
+        SetHealthBarVisible(true);
     }
 
     private void UpdateHealthBar(
@@ -46,5 +73,23 @@ public class MonsterHealthBarUI : MonoBehaviour
 
         fillImage.fillAmount =
             Mathf.Clamp01(ratio);
+
+        /*
+         * HP가 0이 되면 사망 연출 중에는
+         * 체력바가 보이지 않도록 숨깁니다.
+         */
+        if (currentHp <= 0)
+        {
+            SetHealthBarVisible(false);
+        }
+    }
+
+    private void SetHealthBarVisible(
+        bool visible)
+    {
+        if (hpGaugeRoot == null)
+            return;
+
+        hpGaugeRoot.SetActive(visible);
     }
 }
