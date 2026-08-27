@@ -1,15 +1,14 @@
-using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-public class BasicAttackSkill : PlayerSkillBase
+public class BasicAttackSkill : AttackSkillBase
 {
     [Header("Attack")]
     [SerializeField]
-    private int baseDamage = 50;
+    private int baseDamage = 10;
 
     [SerializeField]
-    private int hitCount = 5;
+    private int hitCount = 1;
 
     [SerializeField]
     private int maxTargets = 1;
@@ -22,31 +21,11 @@ public class BasicAttackSkill : PlayerSkillBase
     private Vector2 attackOffset =
         new Vector2(0.5f, 0.05f);
 
-    private const int MaxHitBufferSize = 16;
-
-    private readonly Collider2D[] hitBuffer =
-        new Collider2D[MaxHitBufferSize];
-
-    private readonly HashSet<MonsterHealth>
-        processedMonsters = new();
-
     private SkillContext activeContext;
-
-    private ContactFilter2D monsterFilter;
 
     private bool isExecuting;
     private bool movementLocked;
     private bool hasAppliedHit;
-
-    private void Awake()
-    {
-        monsterFilter = new ContactFilter2D
-        {
-            useLayerMask = true,
-            layerMask = LayerMask.GetMask("Monster"),
-            useTriggers = true
-        };
-    }
 
     public override bool CanExecute(
         SkillContext context)
@@ -60,12 +39,24 @@ public class BasicAttackSkill : PlayerSkillBase
         if (isExecuting)
             return false;
 
+        if (context.SkillController
+            .IsAttackExecuting)
+        {
+            return false;
+        }
+
         return true;
     }
 
     public override void Execute(
         SkillContext context)
     {
+        if (!context.SkillController
+            .TryBeginAttack())
+        {
+            return;
+        }
+
         activeContext = context;
         isExecuting = true;
         hasAppliedHit = false;
@@ -73,6 +64,10 @@ public class BasicAttackSkill : PlayerSkillBase
         bool isGrounded =
             context.Move.IsGrounded;
 
+        /*
+         * 지상 공격에서는 수평 이동을 정지하고,
+         * 공중 공격에서는 기존 수평 관성을 유지합니다.
+         */
         context.Move.SetMovementEnabled(
             enabled: false,
             stopHorizontalMovement: isGrounded
@@ -99,95 +94,20 @@ public class BasicAttackSkill : PlayerSkillBase
             return;
         }
 
+        /*
+         * 애니메이션 이벤트가 중복 호출되더라도
+         * 한 번의 일반 공격에서는 한 번만 판정합니다.
+         */
         hasAppliedHit = true;
 
-        Vector2 attackCenter =
-            CalculateAttackCenter(
-                activeContext
-            );
-
-        PhysicsScene2D physicsScene =
-            activeContext.User.scene
-                .GetPhysicsScene2D();
-
-        int colliderCount =
-            physicsScene.OverlapBox(
-                attackCenter,
-                attackSize,
-                0f,
-                monsterFilter,
-                hitBuffer
-            );
-
-        processedMonsters.Clear();
-
-        int damagedTargetCount = 0;
-
-        for (int i = 0; i < colliderCount; i++)
-        {
-            Collider2D hitCollider =
-                hitBuffer[i];
-
-            if (hitCollider == null)
-                continue;
-
-            MonsterHealth monsterHealth =
-                hitCollider.GetComponentInParent
-                    <MonsterHealth>();
-
-            if (monsterHealth == null ||
-                monsterHealth.IsDead)
-            {
-                continue;
-            }
-
-            if (!processedMonsters.Add(
-                    monsterHealth))
-            {
-                continue;
-            }
-
-            /*
-             * 해당 몬스터가 받을 각 타격의
-             * 데미지와 크리티컬 여부를 서버에서 계산합니다.
-             */
-            DamageHitResult[] hitResults =
-                DamageCalculator.CalculateHits(
-                    baseDamage,
-                    hitCount,
-                    out int totalDamage
-                );
-
-            /*
-             * HP는 타격별로 나누지 않고
-             * 합산값을 한 번만 전달합니다.
-             */
-            monsterHealth.TakeDamage(
-                activeContext.User,
-                totalDamage,
-                hitResults
-            );
-
-            damagedTargetCount++;
-
-            if (damagedTargetCount >= maxTargets)
-                break;
-        }
-    }
-
-    private Vector2 CalculateAttackCenter(
-        SkillContext context)
-    {
-        float facingX =
-            context.FacingDirection.x >= 0f
-                ? 1f
-                : -1f;
-
-        return (Vector2)context.Position +
-            new Vector2(
-                attackOffset.x * facingX,
-                attackOffset.y
-            );
+        ApplyAreaDamage(
+            activeContext,
+            baseDamage,
+            hitCount,
+            maxTargets,
+            attackSize,
+            attackOffset
+        );
     }
 
     private void EndAttack()
@@ -207,6 +127,9 @@ public class BasicAttackSkill : PlayerSkillBase
 
             movementLocked = false;
         }
+
+        activeContext.SkillController
+            .EndAttack();
 
         isExecuting = false;
         hasAppliedHit = false;
@@ -236,6 +159,9 @@ public class BasicAttackSkill : PlayerSkillBase
                 activeContext.Move
                     .SetMovementEnabled(true);
             }
+
+            activeContext.SkillController
+                .EndAttack();
         }
 
         movementLocked = false;
@@ -247,27 +173,9 @@ public class BasicAttackSkill : PlayerSkillBase
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
-        PlayerMove move =
-            GetComponent<PlayerMove>();
-
-        float facingX =
-            move == null ||
-            move.FacingDirection.x >= 0f
-                ? 1f
-                : -1f;
-
-        Vector2 center =
-            (Vector2)transform.position +
-            new Vector2(
-                attackOffset.x * facingX,
-                attackOffset.y
-            );
-
-        Gizmos.color = Color.red;
-
-        Gizmos.DrawWireCube(
-            center,
-            attackSize
+        DrawAttackRangeGizmo(
+            attackSize,
+            attackOffset
         );
     }
 #endif

@@ -23,6 +23,11 @@ public class PlayerSkillController : MonoBehaviour
     private PlayerMove playerMove;
     private PlayerAnimController playerAnim;
 
+    private bool isAttackExecuting;
+
+    public bool IsAttackExecuting =>
+        isAttackExecuting;
+
     private void Awake()
     {
         playerMove = GetComponent<PlayerMove>();
@@ -42,6 +47,7 @@ public class PlayerSkillController : MonoBehaviour
             gameObject,
             playerMove,
             playerAnim,
+            this,
             inputDirection
         );
 
@@ -198,5 +204,19 @@ public class PlayerSkillController : MonoBehaviour
         }
 
         return false;
+    }
+
+    public bool TryBeginAttack()
+    {
+        if (isAttackExecuting)
+            return false;
+
+        isAttackExecuting = true;
+        return true;
+    }
+
+    public void EndAttack()
+    {
+        isAttackExecuting = false;
     }
 }

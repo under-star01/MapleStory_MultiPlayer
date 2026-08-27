@@ -8,6 +8,12 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkAnimator))]
 public class PlayerAnimController : NetworkBehaviour
 {
+    private enum AttackAnimationType
+    {
+        BasicAttack,
+        AttackSkill1
+    }
+
     private static readonly int IsMovingHash =
         Animator.StringToHash("isMoving");
 
@@ -20,13 +26,26 @@ public class PlayerAnimController : NetworkBehaviour
     private static readonly int DeadHash =
         Animator.StringToHash("Dead");
 
+    [Header("Attack Animation")]
+    [SerializeField]
+    private AnimationClip attackPlaceholderClip;
+
+    [SerializeField]
+    private AnimationClip basicAttackClip;
+
+    [SerializeField]
+    private AnimationClip attackSkill1Clip;
+
     private Animator animator;
     private NetworkAnimator networkAnimator;
     private PlayerMove playerMove;
     private PlayerHealth playerHealth;
+    private AnimatorOverrideController overrideController;
 
     public event Action AttackHitFrame;
     public event Action AttackAnimationEnded;
+
+    private bool attackEffectFlipX;
 
     private void Awake()
     {
@@ -41,26 +60,28 @@ public class PlayerAnimController : NetworkBehaviour
 
         playerHealth =
             GetComponent<PlayerHealth>();
+
+        overrideController =
+            new AnimatorOverrideController(
+                animator.runtimeAnimatorController
+            );
+
+        animator.runtimeAnimatorController =
+            overrideController;
     }
 
     public override void OnStartServer()
     {
         base.OnStartServer();
 
-        playerHealth.Died +=
-            PlayDead;
-
-        playerHealth.Revived +=
-            PlayRevive;
+        playerHealth.Died += PlayDead;
+        playerHealth.Revived += PlayRevive;
     }
 
     public override void OnStopServer()
     {
-        playerHealth.Died -=
-            PlayDead;
-
-        playerHealth.Revived -=
-            PlayRevive;
+        playerHealth.Died -= PlayDead;
+        playerHealth.Revived -= PlayRevive;
 
         base.OnStopServer();
     }
@@ -70,11 +91,6 @@ public class PlayerAnimController : NetworkBehaviour
         if (!isServer)
             return;
 
-        UpdateMovementAnimation();
-    }
-
-    private void UpdateMovementAnimation()
-    {
         animator.SetBool(
             IsMovingHash,
             playerMove.IsMoving
@@ -86,17 +102,75 @@ public class PlayerAnimController : NetworkBehaviour
         );
     }
 
+    [Server]
     public void PlayAttack()
     {
-        if (!isServer)
-            return;
+        PlayAttackAnimation(
+            AttackAnimationType.BasicAttack
+        );
+    }
 
+    [Server]
+    public void PlayAttackSkill1()
+    {
+        PlayAttackAnimation(
+            AttackAnimationType.AttackSkill1
+        );
+    }
+
+    [Server]
+    private void PlayAttackAnimation(
+        AttackAnimationType animationType)
+    {
         if (playerHealth.IsDead)
             return;
+
+        attackEffectFlipX =
+            playerMove.FacingDirection.x > 0f;
+
+        SetAttackClip(animationType);
+        RpcSetAttackClip(
+            animationType,
+            attackEffectFlipX
+        );
 
         networkAnimator.SetTrigger(
             AttackHash
         );
+    }
+
+    [ClientRpc]
+    private void RpcSetAttackClip(
+        AttackAnimationType animationType,
+        bool effectFlipX)
+    {
+        if (isServer)
+            return;
+
+        attackEffectFlipX =
+            effectFlipX;
+
+        SetAttackClip(animationType);
+    }
+
+    private void SetAttackClip(
+        AttackAnimationType animationType)
+    {
+        AnimationClip animationClip =
+            animationType ==
+            AttackAnimationType.BasicAttack
+                ? basicAttackClip
+                : attackSkill1Clip;
+
+        if (animationClip == null ||
+            attackPlaceholderClip == null)
+        {
+            return;
+        }
+
+        overrideController[
+            attackPlaceholderClip
+        ] = animationClip;
     }
 
     [Server]
@@ -125,6 +199,10 @@ public class PlayerAnimController : NetworkBehaviour
         );
     }
 
+    /*
+     * 일반 공격과 AttackSkill1이
+     * 공통으로 사용하는 타격 이벤트입니다.
+     */
     public void OnAttackHitFrame()
     {
         if (!isServer)
@@ -133,8 +211,28 @@ public class PlayerAnimController : NetworkBehaviour
         AttackHitFrame?.Invoke();
     }
 
+    /*
+     * AttackSkill1 클립에만 배치하는
+     * 이펙트 생성 이벤트입니다.
+     */
+    public void OnAttackSkill1EffectFrame()
+    {
+        EffectPool.Instance?.Play(
+            EffectId.AttackSkill1,
+            transform.position,
+            attackEffectFlipX
+        );
+    }
+
+    /*
+     * 일반 공격과 AttackSkill1이
+     * 공통으로 사용하는 종료 이벤트입니다.
+     */
     public void OnAttackAnimationEnded()
     {
+        if (!isServer)
+            return;
+
         AttackAnimationEnded?.Invoke();
     }
 }

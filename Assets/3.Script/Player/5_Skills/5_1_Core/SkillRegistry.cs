@@ -13,7 +13,11 @@ public static class SkillRegistry
             {
                 SkillId.BasicAttack,
                 typeof(BasicAttackSkill)
-            }
+            },
+            {
+                SkillId.AttackSkill1,
+                typeof(AttackSkill1)
+            },
 
             // 새로운 스킬 추가 예시
             // {
