@@ -432,6 +432,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  reviveMapId: 0
+  reviveSpawnId: Default
 --- !u!114 &3441251927779019087
 MonoBehaviour:
   m_ObjectHideFlags: 0

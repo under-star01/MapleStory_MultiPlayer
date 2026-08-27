@@ -413,11 +413,15 @@ public class MapNetworkManager : NetworkManager
         PlayerMapController mapController =
             player.GetComponent<PlayerMapController>();
 
+        PlayerHealth playerHealth =
+            player.GetComponent<PlayerHealth>();
+
         if (playerMove == null ||
-            mapController == null)
+            mapController == null ||
+            playerHealth == null)
         {
             Debug.LogError(
-                "플레이어의 맵 이동 컴포넌트를 " +
+                "플레이어의 맵 이동 또는 체력 컴포넌트를 " +
                 "찾지 못했습니다.",
                 player
             );
@@ -442,6 +446,15 @@ public class MapNetworkManager : NetworkManager
         mapController.SetCurrentMap(
             transition.TargetMapId
         );
+        /*
+         * 마을의 부활 위치로 이동이 완료된 뒤
+         * 사망 상태와 체력을 복구합니다.
+         */
+        if (playerHealth.IsDead &&
+            transition.TargetMapId == MapId.MainTown)
+        {
+            playerHealth.CompleteRevive();
+        }
 
         /*
          * Scene Interest Management가 변경된

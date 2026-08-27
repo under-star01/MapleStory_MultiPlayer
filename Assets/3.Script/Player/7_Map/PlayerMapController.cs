@@ -3,6 +3,13 @@ using UnityEngine;
 
 public class PlayerMapController : NetworkBehaviour
 {
+    [Header("Revive")]
+    [SerializeField]
+    private MapId reviveMapId;
+
+    [SerializeField]
+    private string reviveSpawnId;
+
     [SyncVar]
     private MapId currentMapId;
 
@@ -125,5 +132,37 @@ public class PlayerMapController : NetworkBehaviour
             currentPortal.TargetMapId,
             currentPortal.TargetSpawnId
         );
+    }
+
+    /// <summary>
+    /// 사망한 플레이어를 마을 부활 위치로 이동시킵니다.
+    /// </summary>
+    [Server]
+    public bool RequestReviveTransition()
+    {
+        if (NetworkManager.singleton
+            is not MapNetworkManager mapNetworkManager)
+        {
+            Debug.LogError(
+                "MapNetworkManager를 찾지 못했습니다.",
+                this
+            );
+
+            return false;
+        }
+
+        /*
+         * 사망한 위치에서 접촉 중이던 포탈 정보는
+         * 더 이상 사용하지 않습니다.
+         */
+        currentPortal = null;
+
+        mapNetworkManager.RequestMapTransition(
+            connectionToClient,
+            reviveMapId,
+            reviveSpawnId
+        );
+
+        return true;
     }
 }

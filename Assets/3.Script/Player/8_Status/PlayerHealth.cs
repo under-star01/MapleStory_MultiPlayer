@@ -6,6 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkIdentity))]
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(PlayerMapController))]
 public class PlayerHealth : NetworkBehaviour
 {
     [Header("Health")]
@@ -24,6 +25,7 @@ public class PlayerHealth : NetworkBehaviour
     private Color damagedColor =
         new Color(0.5f, 0.5f, 0.5f, 1f);
 
+    [SerializeField]
     [SyncVar(hook = nameof(OnCurrentHpChanged))]
     private int currentHp;
 
@@ -31,15 +33,15 @@ public class PlayerHealth : NetworkBehaviour
     private bool isDead;
 
     private PlayerMove playerMove;
+    private PlayerMapController mapController;
     private SpriteRenderer spriteRenderer;
 
     /*
      * 서버에서만 사용하는 무적 판정입니다.
      * 클라이언트에 동기화할 필요는 없습니다.
      */
-    private bool isInvincible;
+    private float invincibleUntil;
 
-    private Coroutine invincibilityCoroutine;
     private Coroutine blinkCoroutine;
 
     private Color originalColor;
@@ -57,6 +59,9 @@ public class PlayerHealth : NetworkBehaviour
         playerMove =
             GetComponent<PlayerMove>();
 
+        mapController =
+            GetComponent<PlayerMapController>();
+
         spriteRenderer =
             GetComponent<SpriteRenderer>();
 
@@ -70,7 +75,7 @@ public class PlayerHealth : NetworkBehaviour
 
         currentHp = maxHp;
         isDead = false;
-        isInvincible = false;
+        invincibleUntil = 0f;
     }
 
     public override void OnStartClient()
@@ -90,43 +95,35 @@ public class PlayerHealth : NetworkBehaviour
 
     [Server]
     public void TakeDamage(
-        int damage,
-        Vector2 attackerPosition)
+    int damage,
+    Vector2 attackerPosition)
     {
         if (isDead)
             return;
 
-        if (isInvincible)
+        if (Time.time < invincibleUntil)
             return;
 
         if (damage <= 0)
             return;
 
         /*
-         * 같은 프레임이나 연속 Trigger 판정으로
-         * 피해가 중복 적용되지 않도록 먼저 무적 처리합니다.
+         * 현재 시각부터 지정 시간 동안 무적입니다.
+         * 코루틴이 중단되어 무적 상태가 영구히 남는 문제를 방지합니다.
          */
-        isInvincible = true;
+        invincibleUntil =
+            Time.time + invincibilityDuration;
 
         currentHp = Mathf.Max(
             currentHp - damage,
             0
         );
 
-        /*
-         * 사망하는 공격이어도 마지막 넉백과
-         * 점멸 반응은 그대로 적용합니다.
-         */
         playerMove.ApplyKnockback(
             attackerPosition
         );
 
         RpcPlayBlink();
-
-        invincibilityCoroutine =
-            StartCoroutine(
-                InvincibilityTimer()
-            );
 
         if (currentHp == 0)
         {
@@ -147,17 +144,6 @@ public class PlayerHealth : NetworkBehaviour
             currentHp + amount,
             maxHp
         );
-    }
-
-    [Server]
-    private IEnumerator InvincibilityTimer()
-    {
-        yield return new WaitForSeconds(
-            invincibilityDuration
-        );
-
-        isInvincible = false;
-        invincibilityCoroutine = null;
     }
 
     [ClientRpc]
@@ -213,6 +199,8 @@ public class PlayerHealth : NetworkBehaviour
             return;
 
         isDead = true;
+
+        Died?.Invoke();
     }
 
     [Command]
@@ -221,27 +209,22 @@ public class PlayerHealth : NetworkBehaviour
         if (!isDead)
             return;
 
-        Revive();
+        mapController.RequestReviveTransition();
     }
 
     [Server]
-    private void Revive()
+    public void CompleteRevive()
     {
         if (!isDead)
             return;
 
-        if (invincibilityCoroutine != null)
-        {
-            StopCoroutine(
-                invincibilityCoroutine
-            );
-
-            invincibilityCoroutine = null;
-        }
-
-        isInvincible = false;
         currentHp = maxHp;
         isDead = false;
+
+        /*
+         * 이전 맵에서 남아 있던 피격 무적 시간을 제거합니다.
+         */
+        invincibleUntil = 0f;
     }
 
     private void OnCurrentHpChanged(
@@ -258,6 +241,13 @@ public class PlayerHealth : NetworkBehaviour
         bool previousState,
         bool newState)
     {
+        /*
+         * 서버에서는 Die()와 Revive()가 이미
+         * 이벤트를 발생시켰으므로 중복 호출하지 않습니다.
+         */
+        if (isServer)
+            return;
+
         if (newState)
         {
             Died?.Invoke();

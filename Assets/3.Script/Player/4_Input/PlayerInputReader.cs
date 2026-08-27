@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerQuickSlotController))]
 [RequireComponent(typeof(PlayerMapController))]
+[RequireComponent(typeof(PlayerHealth))]
 public class PlayerInputReader : NetworkBehaviour
 {
     [Serializable]
@@ -30,12 +31,13 @@ public class PlayerInputReader : NetworkBehaviour
 
     private PlayerMove playerMove;
     private PlayerQuickSlotController quickSlotController;
-    private PlayerMapController mapController;
+    private PlayerMapController mapController; private PlayerHealth playerHealth;
 
     private Vector2 moveInput;
     private bool inputEnabled;
     private bool inputBlocked;
     private bool wasUpPressed;
+    private bool isDead;
 
     private void Awake()
     {
@@ -48,6 +50,9 @@ public class PlayerInputReader : NetworkBehaviour
         mapController =
             GetComponent<PlayerMapController>();
 
+        playerHealth =
+            GetComponent<PlayerHealth>();
+
         CreateQuickKeyLookup();
     }
 
@@ -59,6 +64,15 @@ public class PlayerInputReader : NetworkBehaviour
     {
         base.OnStartAuthority();
 
+        playerHealth.Died +=
+            OnPlayerDied;
+
+        playerHealth.Revived +=
+            OnPlayerRevived;
+
+        isDead =
+            playerHealth.IsDead;
+
         RefreshInputState();
     }
 
@@ -67,6 +81,14 @@ public class PlayerInputReader : NetworkBehaviour
     /// </summary>
     public override void OnStopAuthority()
     {
+        playerHealth.Died -=
+            OnPlayerDied;
+
+        playerHealth.Revived -=
+            OnPlayerRevived;
+
+        isDead = false;
+
         DisableInputs();
 
         base.OnStopAuthority();
@@ -337,13 +359,28 @@ public class PlayerInputReader : NetworkBehaviour
     {
         if (isOwned &&
             isActiveAndEnabled &&
-            !inputBlocked)
+            !inputBlocked &&
+            !isDead)
         {
             EnableInputs();
             return;
         }
 
         DisableInputs();
+    }
+
+    private void OnPlayerDied()
+    {
+        isDead = true;
+
+        RefreshInputState();
+    }
+
+    private void OnPlayerRevived()
+    {
+        isDead = false;
+
+        RefreshInputState();
     }
 
 #if UNITY_EDITOR

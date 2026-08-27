@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(PlayerMove))]
+[RequireComponent(typeof(PlayerHealth))]
 [RequireComponent(typeof(NetworkAnimator))]
 public class PlayerAnimController : NetworkBehaviour
 {
@@ -16,18 +17,52 @@ public class PlayerAnimController : NetworkBehaviour
     private static readonly int AttackHash =
         Animator.StringToHash("Attack");
 
+    private static readonly int DeadHash =
+        Animator.StringToHash("Dead");
+
     private Animator animator;
     private NetworkAnimator networkAnimator;
     private PlayerMove playerMove;
+    private PlayerHealth playerHealth;
 
     public event Action AttackHitFrame;
     public event Action AttackAnimationEnded;
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
-        networkAnimator = GetComponent<NetworkAnimator>();
-        playerMove = GetComponent<PlayerMove>();
+        animator =
+            GetComponent<Animator>();
+
+        networkAnimator =
+            GetComponent<NetworkAnimator>();
+
+        playerMove =
+            GetComponent<PlayerMove>();
+
+        playerHealth =
+            GetComponent<PlayerHealth>();
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        playerHealth.Died +=
+            PlayDead;
+
+        playerHealth.Revived +=
+            PlayRevive;
+    }
+
+    public override void OnStopServer()
+    {
+        playerHealth.Died -=
+            PlayDead;
+
+        playerHealth.Revived -=
+            PlayRevive;
+
+        base.OnStopServer();
     }
 
     private void Update()
@@ -56,21 +91,42 @@ public class PlayerAnimController : NetworkBehaviour
         if (!isServer)
             return;
 
+        if (playerHealth.IsDead)
+            return;
+
         networkAnimator.SetTrigger(
             AttackHash
         );
     }
 
-    /// <summary>
-    /// 공격 애니메이션의 실제 타격 프레임에서
-    /// Animation Event가 호출합니다.
-    /// </summary>
+    [Server]
+    private void PlayDead()
+    {
+        networkAnimator.ResetTrigger(
+            AttackHash
+        );
+
+        networkAnimator.SetTrigger(
+            DeadHash
+        );
+    }
+
+    [Server]
+    private void PlayRevive()
+    {
+        animator.ResetTrigger(
+            DeadHash
+        );
+
+        animator.Play(
+            "Idle",
+            0,
+            0f
+        );
+    }
+
     public void OnAttackHitFrame()
     {
-        /*
-         * 클라이언트에서도 애니메이션 이벤트가
-         * 호출될 수 있으므로 서버에서만 전달합니다.
-         */
         if (!isServer)
             return;
 
