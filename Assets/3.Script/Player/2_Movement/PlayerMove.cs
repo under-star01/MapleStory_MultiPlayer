@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Collider2D))]
+[RequireComponent(typeof(PlayerEffectController))]
 public class PlayerMove : NetworkBehaviour
 {
     [SyncVar(hook = nameof(OnFacingRightChanged))]
@@ -19,6 +20,16 @@ public class PlayerMove : NetworkBehaviour
 
     [SerializeField]
     private float maxFallSpeed = 20f;
+
+    [Header("Air Jump")]
+    [SerializeField]
+    private float doubleJumpForceX = 8f;
+
+    [SerializeField]
+    private float doubleJumpForceY = 2f;
+
+    [SerializeField]
+    private float upJumpForce = 8f;
 
     [Header("Knockback")]
     [SerializeField]
@@ -43,6 +54,7 @@ public class PlayerMove : NetworkBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Collider2D playerCollider;
+    private PlayerEffectController playerEffect;
 
     private RaycastHit2D groundHit;
     private Collider2D ignoredPlatform;
@@ -50,8 +62,14 @@ public class PlayerMove : NetworkBehaviour
     private float moveInput;
     private float knockbackVelocityX;
 
+    private Vector2 airJumpForce;
+
     private bool jumpRequested;
+    private bool airJumpRequested;
+    private bool hasUsedAirJump;
+    private bool keepAirJumpMomentum;
     private bool movementEnabled = true;
+    private bool keepHorizontal;
 
     public bool IsGrounded { get; private set; }
 
@@ -62,6 +80,12 @@ public class PlayerMove : NetworkBehaviour
     public bool CanJump =>
         movementEnabled &&
         IsGrounded;
+
+    public bool CanAirJump =>
+        movementEnabled &&
+        !IsGrounded &&
+        !hasUsedAirJump &&
+        !airJumpRequested;
 
     public bool CanDropDown
     {
@@ -97,6 +121,9 @@ public class PlayerMove : NetworkBehaviour
 
         playerCollider =
             GetComponent<Collider2D>();
+
+        playerEffect =
+            GetComponent<PlayerEffectController>();
     }
 
     private void OnDisable()
@@ -144,6 +171,7 @@ public class PlayerMove : NetworkBehaviour
         CheckGround();
         ApplyMovement();
         ApplyJump();
+        ApplyAirJump();
         RecoverKnockback();
         ClampFallSpeed();
     }
@@ -169,7 +197,7 @@ public class PlayerMove : NetworkBehaviour
     }
 
     /// <summary>
-    /// 점프 가능한 상태라면 점프를 예약합니다.
+    /// 지상 점프를 예약합니다.
     /// 실제 물리 처리는 FixedUpdate에서 수행합니다.
     /// </summary>
     [Server]
@@ -179,6 +207,75 @@ public class PlayerMove : NetworkBehaviour
             return false;
 
         jumpRequested = true;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 입력한 좌우 방향으로 추가 점프를 예약합니다.
+    /// </summary>
+    [Server]
+    public bool RequestDoubleJump(
+        float direction)
+    {
+        if (!CanAirJump ||
+            Mathf.Approximately(direction, 0f))
+        {
+            return false;
+        }
+
+        direction =
+            Mathf.Sign(direction);
+
+        keepHorizontal = false;
+
+        return RequestAirJump(
+            new Vector2(
+                direction * doubleJumpForceX,
+                doubleJumpForceY
+            ),
+            EffectId.DoubleJump,
+            direction
+        );
+    }
+
+    /// <summary>
+    /// 위쪽으로 추가 점프를 예약합니다.
+    /// </summary>
+    [Server]
+    public bool RequestUpJump()
+    {
+        if (!CanAirJump)
+            return false;
+
+        keepHorizontal = true;
+
+        return RequestAirJump(
+            Vector2.up * upJumpForce,
+            EffectId.UpJump
+        );
+    }
+
+    [Server]
+    private bool RequestAirJump(
+        Vector2 force,
+        EffectId effectId,
+        float direction = 0f)
+    {
+        airJumpForce = force;
+        airJumpRequested = true;
+        hasUsedAirJump = true;
+
+        if (effectId == EffectId.DoubleJump)
+        {
+            playerEffect.PlayDoubleJumpEffect(
+                direction
+            );
+        }
+        else
+        {
+            playerEffect.PlayUpJumpEffect();
+        }
 
         return true;
     }
@@ -219,7 +316,7 @@ public class PlayerMove : NetworkBehaviour
             return;
         }
 
-        jumpRequested = false;
+        ClearJumpRequests();
 
         if (stopHorizontalMovement)
         {
@@ -241,7 +338,9 @@ public class PlayerMove : NetworkBehaviour
                 ? 1f
                 : -1f;
 
-        jumpRequested = false;
+        ClearJumpRequests();
+
+        keepAirJumpMomentum = false;
         IsGrounded = false;
 
         knockbackVelocityX =
@@ -257,13 +356,12 @@ public class PlayerMove : NetworkBehaviour
 
     private void ApplyMovement()
     {
-        if (!movementEnabled)
+        if (!movementEnabled ||
+            keepAirJumpMomentum)
+        {
             return;
+        }
 
-        /*
-         * 기존 이동 속도에 남아 있는
-         * 넉백 속도를 더합니다.
-         */
         rb.linearVelocity =
             new Vector2(
                 moveInput * moveSpeed +
@@ -292,9 +390,40 @@ public class PlayerMove : NetworkBehaviour
         IsGrounded = false;
     }
 
-    /// <summary>
-    /// 수평 넉백 속도를 서서히 0으로 복구합니다.
-    /// </summary>
+    private void ApplyAirJump()
+    {
+        if (!airJumpRequested)
+            return;
+
+        float horizontalVelocity =
+            keepHorizontal
+                ? rb.linearVelocity.x
+                : 0f;
+
+        /*
+         * 더블 점프는 기존 속도를 모두 제거하고,
+         * 윗점프는 기존 수평 속도만 유지합니다.
+         */
+        rb.linearVelocity =
+            new Vector2(
+                horizontalVelocity,
+                0f
+            );
+
+        knockbackVelocityX = 0f;
+
+        rb.AddForce(
+            airJumpForce,
+            ForceMode2D.Impulse
+        );
+
+        airJumpRequested = false;
+        keepAirJumpMomentum = true;
+        keepHorizontal = false;
+
+        IsGrounded = false;
+    }
+
     private void RecoverKnockback()
     {
         knockbackVelocityX =
@@ -391,14 +520,44 @@ public class PlayerMove : NetworkBehaviour
         IsGrounded =
             ignoredPlatform == null &&
             groundHit.collider != null;
+
+        if (IsGrounded)
+        {
+            ResetAirJump();
+        }
+    }
+
+    private void ResetAirJump()
+    {
+        airJumpForce = Vector2.zero;
+        airJumpRequested = false;
+        hasUsedAirJump = false;
+        keepAirJumpMomentum = false;
+        keepHorizontal = false;
+    }
+
+    private void ClearJumpRequests()
+    {
+        jumpRequested = false;
+        airJumpRequested = false;
+        airJumpForce = Vector2.zero;
+        keepHorizontal = false;
     }
 
     private IEnumerator DropThroughPlatform(
         Collider2D platform)
     {
         ignoredPlatform = platform;
+
         IsGrounded = false;
-        jumpRequested = false;
+        ClearJumpRequests();
+
+        /*
+         * 하단 점프 후에는 공중 추가 점프를
+         * 한 번 사용할 수 있도록 초기화합니다.
+         */
+        hasUsedAirJump = false;
+        keepAirJumpMomentum = false;
 
         Physics2D.IgnoreCollision(
             playerCollider,
@@ -456,7 +615,9 @@ public class PlayerMove : NetworkBehaviour
         moveInput = 0f;
         knockbackVelocityX = 0f;
 
-        jumpRequested = false;
+        ClearJumpRequests();
+        ResetAirJump();
+
         IsGrounded = false;
 
         rb.linearVelocity =
@@ -467,6 +628,29 @@ public class PlayerMove : NetworkBehaviour
     }
 
 #if UNITY_EDITOR
+    protected override void OnValidate()
+    {
+        base.OnValidate();
+
+        moveSpeed =
+            Mathf.Max(0f, moveSpeed);
+
+        jumpForce =
+            Mathf.Max(0f, jumpForce);
+
+        doubleJumpForceX =
+            Mathf.Max(0f, doubleJumpForceX);
+
+        doubleJumpForceY =
+            Mathf.Max(0f, doubleJumpForceY);
+
+        upJumpForce =
+            Mathf.Max(0f, upJumpForce);
+
+        maxFallSpeed =
+            Mathf.Max(0f, maxFallSpeed);
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (groundCheck == null)

@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerHealth))]
+[RequireComponent(typeof(PlayerEffectController))]
 [RequireComponent(typeof(NetworkAnimator))]
 public class PlayerAnimController : NetworkBehaviour
 {
@@ -38,14 +39,15 @@ public class PlayerAnimController : NetworkBehaviour
 
     private Animator animator;
     private NetworkAnimator networkAnimator;
+
     private PlayerMove playerMove;
     private PlayerHealth playerHealth;
+    private PlayerEffectController playerEffect;
+
     private AnimatorOverrideController overrideController;
 
     public event Action AttackHitFrame;
     public event Action AttackAnimationEnded;
-
-    private bool attackEffectFlipX;
 
     private void Awake()
     {
@@ -61,6 +63,9 @@ public class PlayerAnimController : NetworkBehaviour
         playerHealth =
             GetComponent<PlayerHealth>();
 
+        playerEffect =
+            GetComponent<PlayerEffectController>();
+
         overrideController =
             new AnimatorOverrideController(
                 animator.runtimeAnimatorController
@@ -74,14 +79,20 @@ public class PlayerAnimController : NetworkBehaviour
     {
         base.OnStartServer();
 
-        playerHealth.Died += PlayDead;
-        playerHealth.Revived += PlayRevive;
+        playerHealth.Died +=
+            PlayDead;
+
+        playerHealth.Revived +=
+            PlayRevive;
     }
 
     public override void OnStopServer()
     {
-        playerHealth.Died -= PlayDead;
-        playerHealth.Revived -= PlayRevive;
+        playerHealth.Died -=
+            PlayDead;
+
+        playerHealth.Revived -=
+            PlayRevive;
 
         base.OnStopServer();
     }
@@ -125,13 +136,19 @@ public class PlayerAnimController : NetworkBehaviour
         if (playerHealth.IsDead)
             return;
 
-        attackEffectFlipX =
-            playerMove.FacingDirection.x > 0f;
+        /*
+         * 공격 시작 순간의 방향을
+         * 이펙트 컨트롤러에 저장합니다.
+         */
+        playerEffect
+            .PrepareAttackEffectDirection();
 
-        SetAttackClip(animationType);
+        SetAttackClip(
+            animationType
+        );
+
         RpcSetAttackClip(
-            animationType,
-            attackEffectFlipX
+            animationType
         );
 
         networkAnimator.SetTrigger(
@@ -141,16 +158,18 @@ public class PlayerAnimController : NetworkBehaviour
 
     [ClientRpc]
     private void RpcSetAttackClip(
-        AttackAnimationType animationType,
-        bool effectFlipX)
+        AttackAnimationType animationType)
     {
+        /*
+         * 호스트는 서버에서 이미
+         * 클립을 변경했습니다.
+         */
         if (isServer)
             return;
 
-        attackEffectFlipX =
-            effectFlipX;
-
-        SetAttackClip(animationType);
+        SetAttackClip(
+            animationType
+        );
     }
 
     private void SetAttackClip(
@@ -209,19 +228,6 @@ public class PlayerAnimController : NetworkBehaviour
             return;
 
         AttackHitFrame?.Invoke();
-    }
-
-    /*
-     * AttackSkill1 클립에만 배치하는
-     * 이펙트 생성 이벤트입니다.
-     */
-    public void OnAttackSkill1EffectFrame()
-    {
-        EffectPool.Instance?.Play(
-            EffectId.AttackSkill1,
-            transform.position,
-            attackEffectFlipX
-        );
     }
 
     /*

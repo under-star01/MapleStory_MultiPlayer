@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 3761611756670745891}
   - component: {fileID: 4844357769319987438}
   - component: {fileID: 3441251927779019087}
+  - component: {fileID: 2507989530519979272}
   - component: {fileID: 549856490600395042}
   - component: {fileID: 6081832958655312243}
   - component: {fileID: 251517183009848918}
@@ -330,6 +331,9 @@ MonoBehaviour:
   moveSpeed: 3.5
   jumpForce: 8
   maxFallSpeed: 20
+  doubleJumpForceX: 8
+  doubleJumpForceY: 3
+  upJumpForce: 13
   knockbackForceX: 4
   knockbackForceY: 5
   knockbackRecoverySpeed: 12
@@ -461,6 +465,21 @@ MonoBehaviour:
   blinkInterval: 0.1
   damagedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   currentHp: 0
+--- !u!114 &2507989530519979272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7b25b97fc7fd7849932dde91ff59f38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerEffectController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!114 &549856490600395042
 MonoBehaviour:
   m_ObjectHideFlags: 0

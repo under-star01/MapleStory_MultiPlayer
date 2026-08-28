@@ -541,7 +541,7 @@ MonoBehaviour:
     ScreenPosition: {x: 0, y: 0}
     DeadZone:
       Enabled: 1
-      Size: {x: 0.05, y: 2}
+      Size: {x: 0.05, y: 0.5}
     HardLimits:
       Enabled: 0
       Size: {x: 0.8, y: 2}
@@ -8661,6 +8661,8 @@ MonoBehaviour:
   allowExpansion: 1
   effectDataList:
   - {fileID: 11400000, guid: 82db2301460a637458e4b188d14fc639, type: 2}
+  - {fileID: 11400000, guid: 22956e918db1cee4fbfa0ce81df62090, type: 2}
+  - {fileID: 11400000, guid: 28b3372ae47b1824bba59131f0187fd2, type: 2}
 --- !u!4 &1065400550
 Transform:
   m_ObjectHideFlags: 0
