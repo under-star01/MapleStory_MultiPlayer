@@ -38,6 +38,9 @@ public class MapNetworkManager : NetworkManager
         <NetworkConnectionToClient, PendingMapTransition>
         pendingTransitions = new();
 
+    private readonly Dictionary<MapId, MonsterSpawnManager>
+        monsterSpawnManagers = new();
+
     private MapSceneManager mapSceneManager;
     private Coroutine loadMapsCoroutine;
 
@@ -84,6 +87,8 @@ public class MapNetworkManager : NetworkManager
         }
 
         pendingTransitions.Clear();
+        monsterSpawnManagers.Clear();
+
         mapSceneManager.ClearServerMapState();
 
         base.OnStopServer();
@@ -137,6 +142,21 @@ public class MapNetworkManager : NetworkManager
         NetworkConnectionToClient conn)
     {
         pendingTransitions.Remove(conn);
+
+        if (conn != null &&
+            conn.identity != null)
+        {
+            PlayerMapController mapController =
+                conn.identity.GetComponent
+                    <PlayerMapController>();
+
+            if (mapController != null)
+            {
+                NotifyPlayerExitedMap(
+                    mapController.CurrentMapId
+                );
+            }
+        }
 
         base.OnServerDisconnect(conn);
     }
@@ -338,8 +358,8 @@ public class MapNetworkManager : NetworkManager
     }
 
     private void OnServerTransitionMapLoaded(
-    NetworkConnectionToClient conn,
-    TransitionMapLoadedMessage message)
+        NetworkConnectionToClient conn,
+        TransitionMapLoadedMessage message)
     {
         if (!pendingTransitions.TryGetValue(
                 conn,
@@ -430,8 +450,11 @@ public class MapNetworkManager : NetworkManager
             return;
         }
 
-        MapId previousMapId =
-            mapController.CurrentMapId;
+        MapId previousMapId = mapController.CurrentMapId;
+
+        NotifyPlayerExitedMap(
+           previousMapId
+        );
 
         // 목적지의 독립 PhysicsScene2D로 이동합니다.
         SceneManager.MoveGameObjectToScene(
@@ -439,11 +462,11 @@ public class MapNetworkManager : NetworkManager
             targetScene
         );
 
-        playerMove.MovePosition(
-            spawnPoint.position
-        );
+        playerMove.MovePosition(spawnPoint.position);
 
-        mapController.SetCurrentMap(
+        mapController.SetCurrentMap(transition.TargetMapId);
+
+        NotifyPlayerEnteredMap(
             transition.TargetMapId
         );
         /*
@@ -580,6 +603,10 @@ public class MapNetworkManager : NetworkManager
         NetworkServer.AddPlayerForConnection(
             conn,
             player
+        );
+
+        NotifyPlayerEnteredMap(
+            message.MapId
         );
 
         Debug.Log(
@@ -724,5 +751,70 @@ public class MapNetworkManager : NetworkManager
         }
 
         inputReader?.SetInputBlocked(false);
+    }
+
+    private bool TryGetMonsterSpawnManager(
+        MapId mapId,
+        out MonsterSpawnManager spawnManager)
+    {
+        /*
+         * 이미 검색한 맵이면 씬 계층을 다시 탐색하지 않습니다.
+         * 몬스터 관리자가 없는 맵은 null로 캐싱됩니다.
+         */
+        if (monsterSpawnManagers.TryGetValue(
+                mapId,
+                out spawnManager))
+        {
+            return spawnManager != null;
+        }
+
+        if (!mapSceneManager.TryGetLoadedScene(
+                mapId,
+                out Scene mapScene))
+        {
+            return false;
+        }
+
+        foreach (GameObject rootObject
+                 in mapScene.GetRootGameObjects())
+        {
+            spawnManager =
+                rootObject.GetComponentInChildren
+                    <MonsterSpawnManager>(true);
+
+            if (spawnManager != null)
+                break;
+        }
+
+        monsterSpawnManagers.Add(
+            mapId,
+            spawnManager
+        );
+
+        return spawnManager != null;
+    }
+
+    [Server]
+    private void NotifyPlayerEnteredMap(
+    MapId mapId)
+    {
+        if (TryGetMonsterSpawnManager(
+                mapId,
+                out MonsterSpawnManager spawnManager))
+        {
+            spawnManager.OnPlayerEnteredMap();
+        }
+    }
+
+    [Server]
+    private void NotifyPlayerExitedMap(
+        MapId mapId)
+    {
+        if (TryGetMonsterSpawnManager(
+                mapId,
+                out MonsterSpawnManager spawnManager))
+        {
+            spawnManager.OnPlayerExitedMap();
+        }
     }
 }

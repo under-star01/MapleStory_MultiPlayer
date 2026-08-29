@@ -91,6 +91,15 @@ public class MonsterMovement : NetworkBehaviour
     {
         base.OnStartServer();
 
+        if (patrolCoroutine != null)
+        {
+            StopCoroutine(
+                patrolCoroutine
+            );
+
+            patrolCoroutine = null;
+        }
+
         physicsScene =
             gameObject.scene.GetPhysicsScene2D();
 
@@ -98,6 +107,19 @@ public class MonsterMovement : NetworkBehaviour
             RigidbodyType2D.Dynamic;
 
         rigidBody.simulated = true;
+
+        rigidBody.linearVelocity =
+            Vector2.zero;
+
+        rigidBody.angularVelocity =
+            0f;
+
+        attackTarget = null;
+        isAttackMode = false;
+        isHit = false;
+        forcedNextDirection = 0;
+
+        SetMoving(false);
 
         SetMoveDirection(
             Random.value < 0.5f

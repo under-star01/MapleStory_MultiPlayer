@@ -418,10 +418,11 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  maxHp: 1000
-  destroyDelay: 1
+  maxHp: 150
+  deathAnimationDuration: 1
   monsterData: {fileID: 11400000, guid: 094131e98305d1b4cbc550ee5f623186, type: 2}
   worldDropItemPrefab: {fileID: 7973053788341915203, guid: 6b469114d25128e4e9f82b9034b1f151, type: 3}
+  dropSpawnOffset: {x: 0, y: 0.3}
   currentHp: 0
 --- !u!114 &9081464459556445056
 MonoBehaviour:

@@ -15,7 +15,8 @@ public class MonsterHealth : NetworkBehaviour
 
     [Header("Death")]
     [SerializeField]
-    private float destroyDelay = 1f;
+    [Min(0f)]
+    private float deathAnimationDuration = 1f;
 
     [Header("Drop")]
     [SerializeField]
@@ -48,8 +49,9 @@ public class MonsterHealth : NetworkBehaviour
      * 이후 DamageNumberController가 구독할 이벤트입니다.
      * 배열 하나가 스킬 한 번의 데미지 묶음을 의미합니다.
      */
-    public event Action<DamageHitResult[]>
-        DamageReceived;
+    public event Action<DamageHitResult[]> DamageReceived;
+
+    public event Action<MonsterHealth> DeathCompleted;
 
     private static readonly int HitHash =
     Animator.StringToHash("Hit");
@@ -75,6 +77,14 @@ public class MonsterHealth : NetworkBehaviour
 
         currentHp = maxHp;
         isDead = false;
+
+        monsterCollider.enabled = true;
+
+        animator.ResetTrigger(HitHash);
+        animator.ResetTrigger(DieHash);
+
+        animator.Rebind();
+        animator.Update(0f);
     }
 
     public override void OnStartClient()
@@ -179,7 +189,7 @@ public class MonsterHealth : NetworkBehaviour
         RpcPlayDieAnimation();
 
         StartCoroutine(
-            DestroyAfterDelay()
+            CompleteDeathAfterDelay()
         );
     }
 
@@ -292,13 +302,14 @@ public class MonsterHealth : NetworkBehaviour
         animator.SetTrigger(DieHash);
     }
 
-    private IEnumerator DestroyAfterDelay()
+    [Server]
+    private IEnumerator CompleteDeathAfterDelay()
     {
         yield return new WaitForSeconds(
-            destroyDelay
+            deathAnimationDuration
         );
 
-        NetworkServer.Destroy(gameObject);
+        DeathCompleted?.Invoke(this);
     }
 
     private void OnCurrentHpChanged(
