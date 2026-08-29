@@ -59,6 +59,7 @@ public class MonsterMovement : NetworkBehaviour
     private Transform attackTarget;
 
     private bool isAttackMode;
+    private bool isHit;
     private int forcedNextDirection;
 
     private Coroutine patrolCoroutine;
@@ -247,12 +248,61 @@ public class MonsterMovement : NetworkBehaviour
     }
 
     /// <summary>
+    /// 피격 애니메이션이 재생되는 동안
+    /// 현재 이동과 순찰을 중단합니다.
+    /// </summary>
+    [Server]
+    public void OnHit()
+    {
+        if (monsterHealth.IsDead)
+            return;
+
+        isHit = true;
+
+        if (patrolCoroutine != null)
+        {
+            StopCoroutine(
+                patrolCoroutine
+            );
+
+            patrolCoroutine = null;
+        }
+
+        StopMoving();
+    }
+
+    /// <summary>
+    /// 피격 애니메이션 종료 후
+    /// 몬스터의 순찰을 다시 시작합니다.
+    /// </summary>
+    [Server]
+    public void OnHitEnded()
+    {
+        if (monsterHealth.IsDead ||
+            !isHit)
+        {
+            return;
+        }
+
+        isHit = false;
+
+        if (patrolCoroutine == null)
+        {
+            patrolCoroutine =
+                StartCoroutine(Patrol());
+        }
+    }
+
+    /// <summary>
     /// MonsterHealth가 사망을 결정한 순간 호출합니다.
     /// 현재 위치에서 모든 물리 이동을 멈춥니다.
     /// </summary>
+
     [Server]
     public void OnDeath()
     {
+        isHit = false;
+
         if (patrolCoroutine != null)
         {
             StopCoroutine(
@@ -273,10 +323,6 @@ public class MonsterMovement : NetworkBehaviour
         rigidBody.angularVelocity =
             0f;
 
-        /*
-         * 중력과 외부 물리력의 영향을 차단하여
-         * 사망한 위치에 고정합니다.
-         */
         rigidBody.bodyType =
             RigidbodyType2D.Kinematic;
     }

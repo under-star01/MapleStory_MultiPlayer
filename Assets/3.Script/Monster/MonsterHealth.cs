@@ -133,6 +133,9 @@ public class MonsterHealth : NetworkBehaviour
             return;
         }
 
+        monsterMovement?.OnHit();
+
+        PlayHitAnimation();
         RpcPlayHitAnimation();
     }
 
@@ -247,13 +250,39 @@ public class MonsterHealth : NetworkBehaviour
         );
     }
 
-    [ClientRpc]
-    private void RpcPlayHitAnimation()
+    private void PlayHitAnimation()
     {
         if (isDead)
             return;
 
         animator.SetTrigger(HitHash);
+    }
+
+    [ClientRpc]
+    private void RpcPlayHitAnimation()
+    {
+        /*
+         * 호스트에서는 서버에서 이미 실행했으므로
+         * 같은 Trigger를 중복 실행하지 않습니다.
+         */
+        if (isServer)
+            return;
+
+        PlayHitAnimation();
+    }
+
+    /// <summary>
+    /// 서버 Animator의 Hit 상태가 종료되었을 때 호출됩니다.
+    /// </summary>
+    public void OnHitAnimationEnded()
+    {
+        if (!isServer ||
+            isDead)
+        {
+            return;
+        }
+
+        monsterMovement?.OnHitEnded();
     }
 
     [ClientRpc]
