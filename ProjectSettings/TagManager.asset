@@ -13,9 +13,9 @@ TagManager:
   - UI
   - Ground
   - Player
-  - Monster
+  - IgnorePlayer
   - MonsterAttack
-  - 
+  - DropItem
   - 
   - 
   - 

@@ -1,10 +1,20 @@
 using System;
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(PlayerHealth))]
 public class PlayerInventory : NetworkBehaviour
 {
+    [Header("Item Pickup")]
+    [SerializeField]
+    [Min(0.1f)]
+    private float pickupRange = 0.3f;
+
+    [SerializeField]
+    private LayerMask dropItemLayer;
+
     [Header("References")]
     [SerializeField]
     private ConsumableDatabase consumableDatabase;
@@ -17,6 +27,11 @@ public class PlayerInventory : NetworkBehaviour
         consumables = new();
 
     private PlayerHealth playerHealth;
+
+    private readonly List<Collider2D>
+        pickupHits = new();
+
+    private ContactFilter2D pickupFilter;
 
     /// <summary>
     /// 특정 소비 아이템의 수량이 변경될 때 발생합니다.
@@ -34,16 +49,14 @@ public class PlayerInventory : NetworkBehaviour
     {
         playerHealth =
             GetComponent<PlayerHealth>();
-    }
 
-    public override void OnStartServer()
-    {
-        base.OnStartServer();
-
-        TryAddConsumable(
-            ConsumableId.RedPotion,
-            5
-        );
+        pickupFilter =
+            new ContactFilter2D
+            {
+                useLayerMask = true,
+                layerMask = dropItemLayer,
+                useTriggers = true
+            };
     }
 
     public override void OnStartClient()
@@ -290,5 +303,80 @@ public class PlayerInventory : NetworkBehaviour
         );
 
         InventoryChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// 로컬 플레이어가 주변 드롭 아이템의
+    /// 획득을 서버에 요청합니다.
+    /// </summary>
+    public bool RequestPickup()
+    {
+        if (!isOwned)
+            return false;
+
+        CmdPickupNearestItem();
+        return true;
+    }
+
+    [Command]
+    private void CmdPickupNearestItem()
+    {
+        PhysicsScene2D physicsScene =
+            gameObject.scene.GetPhysicsScene2D();
+
+        if (!physicsScene.IsValid())
+        {
+            Debug.LogWarning(
+                $"유효한 PhysicsScene2D가 아닙니다: " +
+                $"{gameObject.scene.name}",
+                this
+            );
+
+            return;
+        }
+
+        pickupHits.Clear();
+
+        physicsScene.OverlapCircle(
+            transform.position,
+            pickupRange,
+            pickupFilter,
+            pickupHits
+        );
+
+        WorldDropItem nearestDrop = null;
+        float nearestSqrDistance =
+            float.MaxValue;
+
+        foreach (Collider2D hit in pickupHits)
+        {
+            if (hit == null)
+                continue;
+
+            WorldDropItem drop =
+                hit.GetComponentInParent<WorldDropItem>();
+
+            if (drop == null)
+                continue;
+
+            float sqrDistance =
+                ((Vector2)drop.transform.position -
+                 (Vector2)transform.position)
+                .sqrMagnitude;
+
+            if (sqrDistance >= nearestSqrDistance)
+                continue;
+
+            nearestSqrDistance =
+                sqrDistance;
+
+            nearestDrop =
+                drop;
+        }
+
+        if (nearestDrop == null)
+            return;
+
+        nearestDrop.TryCollect(this);
     }
 }

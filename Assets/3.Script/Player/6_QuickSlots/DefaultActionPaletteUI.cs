@@ -47,7 +47,6 @@ public class DefaultActionPaletteUI : MonoBehaviour
     private void Awake()
     {
         CollectSlots();
-        CreateCommands();
     }
 
     public void Bind(
@@ -70,6 +69,8 @@ public class DefaultActionPaletteUI : MonoBehaviour
 
         quickSlotController = controller;
 
+        CreateCommands();
+
         initializeCoroutine =
             StartCoroutine(InitializeNextFrame());
     }
@@ -84,6 +85,7 @@ public class DefaultActionPaletteUI : MonoBehaviour
 
         quickSlotController = null;
 
+        commands.Clear();
         ClearPalette();
     }
 
@@ -461,6 +463,20 @@ public class DefaultActionPaletteUI : MonoBehaviour
                 BasicActionId.OpenSkillUI,
                 new OpenSkillUICommand(
                     skillUI
+                )
+            );
+        }
+
+        PlayerInventory inventory =
+        quickSlotController.GetComponent
+            <PlayerInventory>();
+
+        if (inventory != null)
+        {
+            commands.Add(
+                BasicActionId.PickupItem,
+                new PickupItemCommand(
+                    inventory
                 )
             );
         }

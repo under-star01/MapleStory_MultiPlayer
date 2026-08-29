@@ -15,7 +15,7 @@ public class AttackSkill1 : AttackSkillBase
 
     [SerializeField]
     private Vector2 attackSize =
-        new Vector2(2f, 1f);
+        new Vector2(2.5f, 1f);
 
     [SerializeField]
     private Vector2 attackOffset =

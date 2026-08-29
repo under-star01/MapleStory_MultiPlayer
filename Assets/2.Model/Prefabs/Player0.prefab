@@ -401,10 +401,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerQuickSlotController
   defaultSkillBindings:
-  - key: 43
-    skillId: 1000
-  - key: 42
-    skillId: 1001
   - key: 41
     skillId: 1002
   - key: 35
@@ -506,6 +502,10 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  pickupRange: 0.3
+  dropItemLayer:
+    serializedVersion: 2
+    m_Bits: 1024
   consumableDatabase: {fileID: 11400000, guid: 5da7c28d8e329504f9ae4d7dca1e5f84, type: 2}
 --- !u!114 &549856490600395042
 MonoBehaviour:

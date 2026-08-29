@@ -6,4 +6,5 @@ public enum BasicActionId
     OpenSettingUI,
     OpenInventoryUI,
     OpenSkillUI,
+    PickupItem
 }

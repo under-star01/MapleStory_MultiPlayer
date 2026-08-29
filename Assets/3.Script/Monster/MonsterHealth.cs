@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using Mirror;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(NetworkIdentity))]
 [RequireComponent(typeof(Collider2D))]
@@ -15,6 +16,16 @@ public class MonsterHealth : NetworkBehaviour
     [Header("Death")]
     [SerializeField]
     private float destroyDelay = 1f;
+
+    [Header("Drop")]
+    [SerializeField]
+    private MonsterData monsterData;
+
+    [SerializeField]
+    private WorldDropItem worldDropItemPrefab;
+
+    [SerializeField]
+    private Vector2 dropSpawnOffset = new Vector2(0f, 0.3f);
 
     [SerializeField]
     [SyncVar(hook = nameof(OnCurrentHpChanged))]
@@ -156,19 +167,75 @@ public class MonsterHealth : NetworkBehaviour
 
         isDead = true;
 
-        /*
-         * 패트롤을 중단하고 Rigidbody2D를
-         * Kinematic으로 바꿔 현재 위치에 고정합니다.
-         */
         monsterMovement?.OnDeath();
 
         monsterCollider.enabled = false;
+
+        SpawnDrops();
 
         RpcPlayDieAnimation();
 
         StartCoroutine(
             DestroyAfterDelay()
         );
+    }
+
+    /// <summary>
+    /// 몬스터 데이터에 등록된 드롭 목록을 확인하고
+    /// 확률 판정에 성공한 소비 아이템을 생성합니다.
+    /// </summary>
+    [Server]
+    private void SpawnDrops()
+    {
+        if (monsterData == null ||
+            worldDropItemPrefab == null)
+        {
+            return;
+        }
+
+        foreach (MonsterData.DropEntry entry
+                 in monsterData.Drops)
+        {
+            if (entry == null ||
+                entry.consumableId ==
+                    ConsumableId.None ||
+                entry.dropChance <= 0f)
+            {
+                continue;
+            }
+
+            if (UnityEngine.Random.value >
+                entry.dropChance)
+            {
+                continue;
+            }
+
+            Vector3 spawnPosition = transform.position + (Vector3)dropSpawnOffset;
+
+            WorldDropItem drop =
+                Instantiate(
+                    worldDropItemPrefab,
+                    spawnPosition,
+                    Quaternion.identity
+                );
+
+            /*
+             * 서버가 여러 맵 씬을 동시에 로드하므로,
+             * 드롭 아이템을 몬스터와 같은 맵 씬에 둡니다.
+             */
+            SceneManager.MoveGameObjectToScene(
+                drop.gameObject,
+                gameObject.scene
+            );
+
+            drop.Initialize(
+                entry.consumableId
+            );
+
+            NetworkServer.Spawn(
+                drop.gameObject
+            );
+        }
     }
 
     [ClientRpc]

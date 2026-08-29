@@ -22,7 +22,7 @@ public abstract class AttackSkillBase :
             {
                 useLayerMask = true,
                 layerMask =
-                    LayerMask.GetMask("Monster"),
+                    LayerMask.GetMask("IgnorePlayer"),
                 useTriggers = true
             };
     }

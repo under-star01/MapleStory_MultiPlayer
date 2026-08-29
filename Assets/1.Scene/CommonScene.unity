@@ -890,7 +890,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 104154883}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -1047,7 +1047,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 119120802}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
@@ -1173,7 +1173,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -11.3, y: -10.198}
+  m_AnchoredPosition: {x: -11.3, y: -14.6}
   m_SizeDelta: {x: 409.7491, y: 79.605}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &171204588
@@ -1670,6 +1670,12 @@ MonoBehaviour:
     icon: {fileID: 2864500283525436841, guid: a94d23ada51157c41a37d3fd3424eef5, type: 3}
     useDefaultBinding: 1
     defaultKey: 29
+  - type: 2
+    skillId: 0
+    basicActionId: 5
+    icon: {fileID: 21300000, guid: 6a9c91ab4e526bf478a77fa6c226960a, type: 3}
+    useDefaultBinding: 1
+    defaultKey: 33
 --- !u!1 &215639917
 GameObject:
   m_ObjectHideFlags: 0
@@ -7540,7 +7546,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 739331637}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -16365,7 +16371,8 @@ MonoBehaviour:
   playerPrefab: {fileID: 1301701852553229459, guid: 6a064bab238451943a0f438ec71995d7, type: 3}
   autoCreatePlayer: 0
   playerSpawnMethod: 0
-  spawnPrefabs: []
+  spawnPrefabs:
+  - {fileID: 7303988103903244154, guid: 6b469114d25128e4e9f82b9034b1f151, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
