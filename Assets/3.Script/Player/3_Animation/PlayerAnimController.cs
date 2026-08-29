@@ -3,16 +3,16 @@ using Mirror;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(NetworkAnimator))]
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerHealth))]
-[RequireComponent(typeof(PlayerEffectController))]
-[RequireComponent(typeof(NetworkAnimator))]
 public class PlayerAnimController : NetworkBehaviour
 {
-    private enum AttackAnimationType
+    private enum ActionAnimationType
     {
         BasicAttack,
-        AttackSkill1
+        AttackSkill1,
+        TeleportSkill
     }
 
     private static readonly int IsMovingHash =
@@ -21,15 +21,15 @@ public class PlayerAnimController : NetworkBehaviour
     private static readonly int IsGroundHash =
         Animator.StringToHash("isGround");
 
-    private static readonly int AttackHash =
-        Animator.StringToHash("Attack");
+    private static readonly int ActionHash =
+        Animator.StringToHash("Action");
 
     private static readonly int DeadHash =
         Animator.StringToHash("Dead");
 
-    [Header("Attack Animation")]
+    [Header("Action Animation")]
     [SerializeField]
-    private AnimationClip attackPlaceholderClip;
+    private AnimationClip actionPlaceholderClip;
 
     [SerializeField]
     private AnimationClip basicAttackClip;
@@ -37,17 +37,33 @@ public class PlayerAnimController : NetworkBehaviour
     [SerializeField]
     private AnimationClip attackSkill1Clip;
 
+    [SerializeField]
+    private AnimationClip teleportSkillClip;
+
     private Animator animator;
     private NetworkAnimator networkAnimator;
 
     private PlayerMove playerMove;
     private PlayerHealth playerHealth;
-    private PlayerEffectController playerEffect;
 
     private AnimatorOverrideController overrideController;
 
-    public event Action AttackHitFrame;
-    public event Action AttackAnimationEnded;
+    /*
+     * 공격 판정, 실제 이동 등
+     * 스킬의 핵심 기능을 실행할 타이밍입니다.
+     */
+    public event Action ActionExecuteFrame;
+
+    /*
+     * 스킬 이펙트를 실행할 타이밍입니다.
+     */
+    public event Action ActionEffectFrame;
+
+    /*
+     * Animator가 Action State를
+     * 완전히 빠져나간 시점입니다.
+     */
+    public event Action ActionEnded;
 
     private void Awake()
     {
@@ -62,9 +78,6 @@ public class PlayerAnimController : NetworkBehaviour
 
         playerHealth =
             GetComponent<PlayerHealth>();
-
-        playerEffect =
-            GetComponent<PlayerEffectController>();
 
         overrideController =
             new AnimatorOverrideController(
@@ -97,11 +110,9 @@ public class PlayerAnimController : NetworkBehaviour
         base.OnStopServer();
     }
 
+    [ServerCallback]
     private void Update()
     {
-        if (!isServer)
-            return;
-
         animator.SetBool(
             IsMovingHash,
             playerMove.IsMoving
@@ -116,87 +127,138 @@ public class PlayerAnimController : NetworkBehaviour
     [Server]
     public void PlayAttack()
     {
-        PlayAttackAnimation(
-            AttackAnimationType.BasicAttack
+        PlayAction(
+            ActionAnimationType.BasicAttack
         );
     }
 
     [Server]
     public void PlayAttackSkill1()
     {
-        PlayAttackAnimation(
-            AttackAnimationType.AttackSkill1
+        PlayAction(
+            ActionAnimationType.AttackSkill1
         );
     }
 
     [Server]
-    private void PlayAttackAnimation(
-        AttackAnimationType animationType)
+    public void PlayTeleportSkill()
+    {
+        PlayAction(
+            ActionAnimationType.TeleportSkill
+        );
+    }
+
+    [Server]
+    private void PlayAction(
+        ActionAnimationType animationType)
     {
         if (playerHealth.IsDead)
             return;
 
-        /*
-         * 공격 시작 순간의 방향을
-         * 이펙트 컨트롤러에 저장합니다.
-         */
-        playerEffect
-            .PrepareAttackEffectDirection();
-
-        SetAttackClip(
+        SetActionClip(
             animationType
         );
 
-        RpcSetAttackClip(
+        RpcSetActionClip(
             animationType
         );
 
         networkAnimator.SetTrigger(
-            AttackHash
+            ActionHash
         );
     }
 
     [ClientRpc]
-    private void RpcSetAttackClip(
-        AttackAnimationType animationType)
+    private void RpcSetActionClip(
+        ActionAnimationType animationType)
     {
         /*
          * 호스트는 서버에서 이미
-         * 클립을 변경했습니다.
+         * 클립을 교체했습니다.
          */
         if (isServer)
             return;
 
-        SetAttackClip(
+        SetActionClip(
             animationType
         );
     }
 
-    private void SetAttackClip(
-        AttackAnimationType animationType)
+    private void SetActionClip(
+        ActionAnimationType animationType)
     {
-        AnimationClip animationClip =
-            animationType ==
-            AttackAnimationType.BasicAttack
-                ? basicAttackClip
-                : attackSkill1Clip;
+        AnimationClip actionClip =
+            animationType switch
+            {
+                ActionAnimationType.BasicAttack
+                    => basicAttackClip,
 
-        if (animationClip == null ||
-            attackPlaceholderClip == null)
+                ActionAnimationType.AttackSkill1
+                    => attackSkill1Clip,
+
+                ActionAnimationType.TeleportSkill
+                    => teleportSkillClip,
+
+                _ => null
+            };
+
+        if (actionPlaceholderClip == null ||
+            actionClip == null)
         {
             return;
         }
 
         overrideController[
-            attackPlaceholderClip
-        ] = animationClip;
+            actionPlaceholderClip
+        ] = actionClip;
+    }
+
+    /*
+     * Animation Event에서 호출됩니다.
+     *
+     * 공격 스킬에서는 공격 판정,
+     * 텔레포트에서는 실제 위치 이동을
+     * 담당합니다.
+     */
+    public void OnActionExecuteFrame()
+    {
+        if (!isServer)
+            return;
+
+        ActionExecuteFrame?.Invoke();
+    }
+
+    /*
+     * Animation Event에서 호출됩니다.
+     *
+     * AttackSkill1, TeleportSkill 등의
+     * 이펙트 타이밍을 담당합니다.
+     */
+    public void OnActionEffectFrame()
+    {
+        if (!isServer)
+            return;
+
+        ActionEffectFrame?.Invoke();
+    }
+
+    /*
+     * ActionStateBehaviour의
+     * OnStateExit에서 호출됩니다.
+     */
+    public void OnActionStateExited()
+    {
+        if (!isServer)
+            return;
+
+        ActionEnded?.Invoke();
     }
 
     [Server]
     private void PlayDead()
     {
         networkAnimator.ResetTrigger(
-            AttackHash
+            ActionHash
         );
 
         networkAnimator.SetTrigger(
@@ -216,29 +278,5 @@ public class PlayerAnimController : NetworkBehaviour
             0,
             0f
         );
-    }
-
-    /*
-     * 일반 공격과 AttackSkill1이
-     * 공통으로 사용하는 타격 이벤트입니다.
-     */
-    public void OnAttackHitFrame()
-    {
-        if (!isServer)
-            return;
-
-        AttackHitFrame?.Invoke();
-    }
-
-    /*
-     * 일반 공격과 AttackSkill1이
-     * 공통으로 사용하는 종료 이벤트입니다.
-     */
-    public void OnAttackAnimationEnded()
-    {
-        if (!isServer)
-            return;
-
-        AttackAnimationEnded?.Invoke();
     }
 }

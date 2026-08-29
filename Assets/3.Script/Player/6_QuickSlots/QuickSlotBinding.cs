@@ -3,6 +3,7 @@ public readonly struct QuickSlotBinding
     public QuickSlotBindingType Type { get; }
     public SkillId SkillId { get; }
     public BasicActionId BasicActionId { get; }
+    public ConsumableId ConsumableId { get; }
 
     public bool IsEmpty =>
         Type == QuickSlotBindingType.None;
@@ -10,11 +11,13 @@ public readonly struct QuickSlotBinding
     private QuickSlotBinding(
         QuickSlotBindingType type,
         SkillId skillId,
-        BasicActionId basicActionId)
+        BasicActionId basicActionId,
+        ConsumableId consumableId)
     {
         Type = type;
         SkillId = skillId;
         BasicActionId = basicActionId;
+        ConsumableId = consumableId;
     }
 
     /// <summary>
@@ -25,7 +28,8 @@ public readonly struct QuickSlotBinding
         return new QuickSlotBinding(
             QuickSlotBindingType.None,
             SkillId.None,
-            BasicActionId.None
+            BasicActionId.None,
+            ConsumableId.None
         );
     }
 
@@ -41,7 +45,8 @@ public readonly struct QuickSlotBinding
         return new QuickSlotBinding(
             QuickSlotBindingType.Skill,
             skillId,
-            BasicActionId.None
+            BasicActionId.None,
+            ConsumableId.None
         );
     }
 
@@ -57,7 +62,25 @@ public readonly struct QuickSlotBinding
         return new QuickSlotBinding(
             QuickSlotBindingType.BasicAction,
             SkillId.None,
-            actionId
+            actionId,
+            ConsumableId.None
+        );
+    }
+
+    /// <summary>
+    /// 소비 아이템 바인딩을 생성합니다.
+    /// </summary>
+    public static QuickSlotBinding FromConsumable(
+    ConsumableId consumableId)
+    {
+        if (consumableId == ConsumableId.None)
+            return Empty();
+
+        return new QuickSlotBinding(
+            QuickSlotBindingType.Consumable,
+            SkillId.None,
+            BasicActionId.None,
+            consumableId
         );
     }
 }

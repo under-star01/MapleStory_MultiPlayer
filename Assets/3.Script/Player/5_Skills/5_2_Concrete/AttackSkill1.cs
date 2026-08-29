@@ -23,9 +23,12 @@ public class AttackSkill1 : AttackSkillBase
 
     private SkillContext activeContext;
 
+    private float direction;
+
     private bool isExecuting;
     private bool movementLocked;
     private bool hasAppliedHit;
+    private bool hasPlayedEffect;
 
     public override bool CanExecute(
         SkillContext context)
@@ -40,25 +43,31 @@ public class AttackSkill1 : AttackSkillBase
             return false;
 
         if (context.SkillController
-            .IsAttackExecuting)
+            .IsActionExecuting)
         {
             return false;
         }
 
         return true;
     }
+
     public override void Execute(
         SkillContext context)
     {
         if (!context.SkillController
-            .TryBeginAttack())
+            .TryBeginAction())
         {
             return;
         }
 
         activeContext = context;
+
+        direction =
+            context.FacingDirection.x;
+
         isExecuting = true;
         hasAppliedHit = false;
+        hasPlayedEffect = false;
 
         bool isGrounded =
             context.Move.IsGrounded;
@@ -70,13 +79,34 @@ public class AttackSkill1 : AttackSkillBase
 
         movementLocked = true;
 
-        context.Anim.AttackHitFrame +=
+        context.Anim.ActionEffectFrame +=
+            PlayEffect;
+
+        context.Anim.ActionExecuteFrame +=
             ApplyAttackHit;
 
-        context.Anim.AttackAnimationEnded +=
-            EndAttack;
+        context.Anim.ActionEnded +=
+            EndAction;
 
         context.Anim.PlayAttackSkill1();
+    }
+
+    [Server]
+    private void PlayEffect()
+    {
+        if (!isExecuting ||
+            activeContext == null ||
+            hasPlayedEffect)
+        {
+            return;
+        }
+
+        hasPlayedEffect = true;
+
+        activeContext.Effect
+            .PlayAttackSkill1Effect(
+                direction
+            );
     }
 
     [Server]
@@ -101,13 +131,18 @@ public class AttackSkill1 : AttackSkillBase
         );
     }
 
-    private void EndAttack()
+    private void EndAction()
     {
-        if (!isExecuting ||
-            activeContext == null)
-        {
+        if (!isExecuting)
             return;
-        }
+
+        FinishAction();
+    }
+
+    private void FinishAction()
+    {
+        if (activeContext == null)
+            return;
 
         UnsubscribeAnimationEvents();
 
@@ -115,14 +150,15 @@ public class AttackSkill1 : AttackSkillBase
         {
             activeContext.Move
                 .SetMovementEnabled(true);
-
-            movementLocked = false;
         }
 
-        activeContext.SkillController.EndAttack();
+        activeContext.SkillController
+            .EndAction();
 
+        movementLocked = false;
         isExecuting = false;
         hasAppliedHit = false;
+        hasPlayedEffect = false;
         activeContext = null;
     }
 
@@ -131,33 +167,19 @@ public class AttackSkill1 : AttackSkillBase
         if (activeContext == null)
             return;
 
-        activeContext.Anim.AttackHitFrame -=
+        activeContext.Anim.ActionEffectFrame -=
+            PlayEffect;
+
+        activeContext.Anim.ActionExecuteFrame -=
             ApplyAttackHit;
 
-        activeContext.Anim.AttackAnimationEnded -=
-            EndAttack;
+        activeContext.Anim.ActionEnded -=
+            EndAction;
     }
 
     private void OnDisable()
     {
-        if (activeContext != null)
-        {
-            UnsubscribeAnimationEvents();
-
-            if (movementLocked)
-            {
-                activeContext.Move
-                    .SetMovementEnabled(true);
-            }
-
-            activeContext.SkillController.
-                EndAttack();
-        }
-
-        movementLocked = false;
-        isExecuting = false;
-        hasAppliedHit = false;
-        activeContext = null;
+        FinishAction();
     }
 
 #if UNITY_EDITOR

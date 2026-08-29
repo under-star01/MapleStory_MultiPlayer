@@ -5,47 +5,59 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Collider2D))]
-[RequireComponent(typeof(PlayerEffectController))]
 public class PlayerMove : NetworkBehaviour
 {
     [SyncVar(hook = nameof(OnFacingRightChanged))]
     private bool facingRight;
 
     [Header("Movement")]
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float moveSpeed = 5f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float jumpForce = 8f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float maxFallSpeed = 20f;
 
     [Header("Air Jump")]
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float doubleJumpForceX = 8f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float doubleJumpForceY = 2f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float upJumpForce = 8f;
 
     [Header("Knockback")]
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float knockbackForceX = 4f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float knockbackForceY = 4f;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float knockbackRecoverySpeed = 12f;
+
+    [Header("Dash")]
+    [SerializeField, Min(0f)]
+    private float dashDistance = 2.5f;
+
+    [SerializeField, Min(0f)]
+    private float dashStopOffset = 0.05f;
+
+    [SerializeField]
+    private LayerMask dashBlockLayer;
+
+    private readonly RaycastHit2D[] dashHits =
+    new RaycastHit2D[8];
 
     [Header("Ground Check")]
     [SerializeField]
     private Transform groundCheck;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     private float groundCheckDistance = 0.1f;
 
     [SerializeField]
@@ -54,7 +66,6 @@ public class PlayerMove : NetworkBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Collider2D playerCollider;
-    private PlayerEffectController playerEffect;
 
     private RaycastHit2D groundHit;
     private Collider2D ignoredPlatform;
@@ -111,6 +122,9 @@ public class PlayerMove : NetworkBehaviour
             ? Vector2.right
             : Vector2.left;
 
+    public bool CanDash =>
+    movementEnabled;
+
     private void Awake()
     {
         rb =
@@ -121,9 +135,6 @@ public class PlayerMove : NetworkBehaviour
 
         playerCollider =
             GetComponent<Collider2D>();
-
-        playerEffect =
-            GetComponent<PlayerEffectController>();
     }
 
     private void OnDisable()
@@ -163,11 +174,9 @@ public class PlayerMove : NetworkBehaviour
         }
     }
 
+    [ServerCallback]
     private void FixedUpdate()
     {
-        if (!isServer)
-            return;
-
         CheckGround();
         ApplyMovement();
         ApplyJump();
@@ -229,14 +238,14 @@ public class PlayerMove : NetworkBehaviour
 
         keepHorizontal = false;
 
-        return RequestAirJump(
+        RequestAirJump(
             new Vector2(
                 direction * doubleJumpForceX,
                 doubleJumpForceY
-            ),
-            EffectId.DoubleJump,
-            direction
+            )
         );
+
+        return true;
     }
 
     /// <summary>
@@ -250,34 +259,19 @@ public class PlayerMove : NetworkBehaviour
 
         keepHorizontal = true;
 
-        return RequestAirJump(
-            Vector2.up * upJumpForce,
-            EffectId.UpJump
+        RequestAirJump(
+            Vector2.up * upJumpForce
         );
+
+        return true;
     }
 
-    [Server]
-    private bool RequestAirJump(
-        Vector2 force,
-        EffectId effectId,
-        float direction = 0f)
+    private void RequestAirJump(
+        Vector2 force)
     {
         airJumpForce = force;
         airJumpRequested = true;
         hasUsedAirJump = true;
-
-        if (effectId == EffectId.DoubleJump)
-        {
-            playerEffect.PlayDoubleJumpEffect(
-                direction
-            );
-        }
-        else
-        {
-            playerEffect.PlayUpJumpEffect();
-        }
-
-        return true;
     }
 
     /// <summary>
@@ -607,7 +601,7 @@ public class PlayerMove : NetworkBehaviour
     /// 기존 물리 상태를 초기화합니다.
     /// </summary>
     [Server]
-    public void Teleport(
+    public void MovePosition(
         Vector2 position)
     {
         RestoreIgnoredPlatformCollision();
@@ -627,40 +621,156 @@ public class PlayerMove : NetworkBehaviour
             position;
     }
 
-#if UNITY_EDITOR
-    protected override void OnValidate()
+
+    [Server]
+    public bool RequestDash(
+    float direction)
     {
-        base.OnValidate();
+        if (Mathf.Approximately(
+                direction,
+                0f))
+        {
+            return false;
+        }
 
-        moveSpeed =
-            Mathf.Max(0f, moveSpeed);
+        direction =
+            Mathf.Sign(direction);
 
-        jumpForce =
-            Mathf.Max(0f, jumpForce);
+        Vector2 moveDirection =
+            Vector2.right * direction;
 
-        doubleJumpForceX =
-            Mathf.Max(0f, doubleJumpForceX);
+        float moveDistance =
+            FindDashDistance(
+                moveDirection
+            );
 
-        doubleJumpForceY =
-            Mathf.Max(0f, doubleJumpForceY);
+        rb.linearVelocity =
+            Vector2.zero;
 
-        upJumpForce =
-            Mathf.Max(0f, upJumpForce);
+        knockbackVelocityX = 0f;
 
-        maxFallSpeed =
-            Mathf.Max(0f, maxFallSpeed);
+        rb.position +=
+            moveDirection * moveDistance;
+
+        return true;
     }
+
+    private float FindDashDistance(
+    Vector2 direction)
+    {
+        ContactFilter2D filter =
+            new ContactFilter2D();
+
+        filter.SetLayerMask(
+            dashBlockLayer
+        );
+
+        filter.useTriggers = false;
+
+        int hitCount =
+            playerCollider.Cast(
+                direction,
+                filter,
+                dashHits,
+                dashDistance
+            );
+
+        float nearestDistance =
+            dashDistance;
+
+        for (int i = 0;
+             i < hitCount;
+             i++)
+        {
+            RaycastHit2D hit =
+                dashHits[i];
+
+            if (hit.collider == null)
+                continue;
+
+            /*
+             * 현재 밟고 있는 바닥처럼
+             * 이동 방향을 막지 않는 접촉은 제외합니다.
+             */
+            if (hit.distance <= 0.001f &&
+                Vector2.Dot(
+                    hit.normal,
+                    -direction
+                ) < 0.5f)
+            {
+                continue;
+            }
+
+            nearestDistance =
+                Mathf.Min(
+                    nearestDistance,
+                    hit.distance
+                );
+        }
+
+        return Mathf.Max(
+            0f,
+            nearestDistance -
+            dashStopOffset
+        );
+    }
+
+#if UNITY_EDITOR
 
     private void OnDrawGizmosSelected()
     {
-        if (groundCheck == null)
+        if (groundCheck != null)
+        {
+            Gizmos.DrawLine(
+                groundCheck.position,
+                groundCheck.position +
+                Vector3.down *
+                groundCheckDistance
+            );
+        }
+
+        Collider2D collider =
+            GetComponent<Collider2D>();
+
+        SpriteRenderer renderer =
+            GetComponent<SpriteRenderer>();
+
+        if (collider == null ||
+            renderer == null)
+        {
             return;
+        }
+
+        float direction =
+            renderer.flipX
+                ? 1f
+                : -1f;
+
+        Bounds bounds =
+            collider.bounds;
+
+        Vector3 start =
+            bounds.center;
+
+        Vector3 end =
+            start +
+            Vector3.right *
+            direction *
+            dashDistance;
+
+        Gizmos.DrawWireCube(
+            start,
+            bounds.size
+        );
+
+        Gizmos.DrawWireCube(
+            end,
+            bounds.size
+        );
 
         Gizmos.DrawLine(
-            groundCheck.position,
-            groundCheck.position +
-            Vector3.down *
-            groundCheckDistance
+            start,
+            end
         );
     }
 #endif

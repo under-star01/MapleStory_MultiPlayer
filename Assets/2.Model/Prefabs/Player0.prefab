@@ -331,12 +331,17 @@ MonoBehaviour:
   moveSpeed: 3.5
   jumpForce: 8
   maxFallSpeed: 20
-  doubleJumpForceX: 8
+  doubleJumpForceX: 9
   doubleJumpForceY: 3
   upJumpForce: 13
   knockbackForceX: 4
   knockbackForceY: 5
   knockbackRecoverySpeed: 12
+  dashDistance: 2.5
+  dashStopOffset: 0.05
+  dashBlockLayer:
+    serializedVersion: 2
+    m_Bits: 64
   groundCheck: {fileID: 965960409149005412}
   groundCheckDistance: 0.25
   groundLayer:
@@ -357,9 +362,10 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  attackPlaceholderClip: {fileID: 7400000, guid: 4a8e52d891e403841ab3e11e33705674, type: 2}
+  actionPlaceholderClip: {fileID: 7400000, guid: 4a8e52d891e403841ab3e11e33705674, type: 2}
   basicAttackClip: {fileID: 7400000, guid: 4a8e52d891e403841ab3e11e33705674, type: 2}
   attackSkill1Clip: {fileID: 7400000, guid: da37eaf8bc5ee194988a670f2dd71876, type: 2}
+  teleportSkillClip: {fileID: 7400000, guid: bcaa93929ffeedc459130c4d195c77ce, type: 2}
 --- !u!114 &1764234220800607801
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,6 +385,8 @@ MonoBehaviour:
     icon: {fileID: 4900108452143912752, guid: 9ba502b57a0eae8499226dcbbac91238, type: 3}
   - skillId: 1002
     icon: {fileID: 5503881086884958086, guid: d4c3999a82ccaa040b57a7983b5fa1e9, type: 3}
+  - skillId: 1003
+    icon: {fileID: 21300000, guid: 7e602d891755a2b448398671d7dff63c, type: 3}
 --- !u!114 &5726701553201237585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -392,12 +400,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerQuickSlotController
   defaultSkillBindings:
-  - key: 44
+  - key: 43
     skillId: 1000
   - key: 42
     skillId: 1001
   - key: 41
     skillId: 1002
+  - key: 35
+    skillId: 1003
 --- !u!114 &2949302589284177834
 MonoBehaviour:
   m_ObjectHideFlags: 0

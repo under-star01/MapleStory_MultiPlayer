@@ -16,4 +16,4 @@ MonoBehaviour:
   animationClip: {fileID: 7400000, guid: 420b2cda02c60fe4f9063cdad06c116b, type: 2}
   positionOffset: {x: 0, y: -0.3}
   scale: {x: 1, y: 1}
-  sortingOrder: 384
+  sortingOrder: 382

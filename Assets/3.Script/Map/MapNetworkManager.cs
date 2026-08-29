@@ -439,7 +439,7 @@ public class MapNetworkManager : NetworkManager
             targetScene
         );
 
-        playerMove.Teleport(
+        playerMove.MovePosition(
             spawnPoint.position
         );
 

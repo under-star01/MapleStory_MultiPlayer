@@ -2,5 +2,6 @@ public enum QuickSlotBindingType
 {
     None,
     Skill,
-    BasicAction
+    BasicAction,
+    Consumable
 }

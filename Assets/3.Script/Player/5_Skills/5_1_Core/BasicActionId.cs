@@ -1,8 +1,7 @@
 public enum BasicActionId
 {
     None,
-    Interact,
     OpenQuickSlotSetting,
-    OpenSkillWindow,
+    OpenSettingWindow,
     OpenInventory
 }

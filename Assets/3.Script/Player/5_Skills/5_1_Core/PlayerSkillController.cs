@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerAnimController))]
+[RequireComponent(typeof(PlayerEffectController))]
 public class PlayerSkillController : MonoBehaviour
 {
     [Serializable]
@@ -22,16 +23,23 @@ public class PlayerSkillController : MonoBehaviour
 
     private PlayerMove playerMove;
     private PlayerAnimController playerAnim;
+    private PlayerEffectController playerEffect;
 
-    private bool isAttackExecuting;
+    private bool isActionExecuting;
 
-    public bool IsAttackExecuting =>
-        isAttackExecuting;
+    public bool IsActionExecuting =>
+        isActionExecuting;
 
     private void Awake()
     {
-        playerMove = GetComponent<PlayerMove>();
-        playerAnim = GetComponent<PlayerAnimController>();
+        playerMove =
+            GetComponent<PlayerMove>();
+
+        playerAnim =
+            GetComponent<PlayerAnimController>();
+
+        playerEffect =
+            GetComponent<PlayerEffectController>();
 
         LearnDefaultSkills();
     }
@@ -47,6 +55,7 @@ public class PlayerSkillController : MonoBehaviour
             gameObject,
             playerMove,
             playerAnim,
+            playerEffect,
             this,
             inputDirection
         );
@@ -206,17 +215,17 @@ public class PlayerSkillController : MonoBehaviour
         return false;
     }
 
-    public bool TryBeginAttack()
+    public bool TryBeginAction()
     {
-        if (isAttackExecuting)
+        if (isActionExecuting)
             return false;
 
-        isAttackExecuting = true;
+        isActionExecuting = true;
         return true;
     }
 
-    public void EndAttack()
+    public void EndAction()
     {
-        isAttackExecuting = false;
+        isActionExecuting = false;
     }
 }

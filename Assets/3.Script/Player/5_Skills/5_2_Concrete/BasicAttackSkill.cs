@@ -40,7 +40,7 @@ public class BasicAttackSkill : AttackSkillBase
             return false;
 
         if (context.SkillController
-            .IsAttackExecuting)
+            .IsActionExecuting)
         {
             return false;
         }
@@ -52,7 +52,7 @@ public class BasicAttackSkill : AttackSkillBase
         SkillContext context)
     {
         if (!context.SkillController
-            .TryBeginAttack())
+            .TryBeginAction())
         {
             return;
         }
@@ -75,10 +75,10 @@ public class BasicAttackSkill : AttackSkillBase
 
         movementLocked = true;
 
-        context.Anim.AttackHitFrame +=
+        context.Anim.ActionExecuteFrame +=
             ApplyAttackHit;
 
-        context.Anim.AttackAnimationEnded +=
+        context.Anim.ActionEnded +=
             EndAttack;
 
         context.Anim.PlayAttack();
@@ -112,28 +112,10 @@ public class BasicAttackSkill : AttackSkillBase
 
     private void EndAttack()
     {
-        if (!isExecuting ||
-            activeContext == null)
-        {
+        if (!isExecuting)
             return;
-        }
 
-        UnsubscribeAnimationEvents();
-
-        if (movementLocked)
-        {
-            activeContext.Move
-                .SetMovementEnabled(true);
-
-            movementLocked = false;
-        }
-
-        activeContext.SkillController
-            .EndAttack();
-
-        isExecuting = false;
-        hasAppliedHit = false;
-        activeContext = null;
+        FinishAttack();
     }
 
     private void UnsubscribeAnimationEvents()
@@ -141,28 +123,33 @@ public class BasicAttackSkill : AttackSkillBase
         if (activeContext == null)
             return;
 
-        activeContext.Anim.AttackHitFrame -=
+        activeContext.Anim.ActionExecuteFrame -=
             ApplyAttackHit;
 
-        activeContext.Anim.AttackAnimationEnded -=
+        activeContext.Anim.ActionEnded -=
             EndAttack;
     }
 
     private void OnDisable()
     {
-        if (activeContext != null)
+        FinishAttack();
+    }
+
+    private void FinishAttack()
+    {
+        if (activeContext == null)
+            return;
+
+        UnsubscribeAnimationEvents();
+
+        if (movementLocked)
         {
-            UnsubscribeAnimationEvents();
-
-            if (movementLocked)
-            {
-                activeContext.Move
-                    .SetMovementEnabled(true);
-            }
-
-            activeContext.SkillController
-                .EndAttack();
+            activeContext.Move
+                .SetMovementEnabled(true);
         }
+
+        activeContext.SkillController
+            .EndAction();
 
         movementLocked = false;
         isExecuting = false;

@@ -9,7 +9,7 @@ public class QuickSlot
 
     /*
      * 기본 기능이 등록된 경우에만 값을 가집니다.
-     * 스킬 또는 빈 슬롯이면 null입니다.
+     * 스킬, 소비 아이템 또는 빈 슬롯이면 null입니다.
      */
     public BasicActionData BasicActionData
     {
@@ -56,6 +56,28 @@ public class QuickSlot
 
         BasicActionData = actionData;
         command = actionData.Command;
+    }
+
+    /// <summary>
+    /// 소비 아이템 데이터 전체를 슬롯에 연결합니다.
+    /// </summary>
+    public void BindConsumable(
+        ConsumableId consumableId,
+        IQuickSlotCommand command)
+    {
+        if (consumableId == ConsumableId.None ||
+            command == null)
+        {
+            return;
+        }
+
+        Binding =
+            QuickSlotBinding.FromConsumable(
+                consumableId
+            );
+
+        BasicActionData = null;
+        this.command = command;
     }
 
     public bool Execute(Vector2 inputDirection)

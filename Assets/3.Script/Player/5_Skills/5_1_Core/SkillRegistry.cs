@@ -18,6 +18,10 @@ public static class SkillRegistry
                 SkillId.AttackSkill1,
                 typeof(AttackSkill1)
             },
+            {
+                SkillId.DashSkill,
+                typeof(DashSkill)
+            },
 
             // 새로운 스킬 추가 예시
             // {

@@ -59,37 +59,65 @@ public class JumpSkill : PlayerSkillBase
          */
         if (input.y > UpInputThreshold)
         {
-            context.Move.RequestUpJump();
+            ExecuteUpJump(context);
             return;
         }
 
-        float direction;
+        ExecuteDoubleJump(
+            context,
+            GetDoubleJumpDirection(context)
+        );
+    }
 
-        if (Mathf.Abs(input.x) >
-            HorizontalInputThreshold)
+    private void ExecuteUpJump(
+        SkillContext context)
+    {
+        if (!context.Move.RequestUpJump())
+            return;
+
+        context.Effect.PlayUpJumpEffect();
+    }
+
+    private void ExecuteDoubleJump(
+        SkillContext context,
+        float direction)
+    {
+        if (!context.Move.RequestDoubleJump(
+                direction))
         {
-            direction =
-                Mathf.Sign(input.x);
-        }
-        else
-        {
-            /*
-             * 좌우 입력이 없다면
-             * 현재 바라보는 방향으로 더블 점프합니다.
-             */
-            direction =
-                context.FacingDirection.x;
+            return;
         }
 
-        context.Move.RequestDoubleJump(
+        context.Effect.PlayDoubleJumpEffect(
             direction
         );
+    }
+
+    private float GetDoubleJumpDirection(
+        SkillContext context)
+    {
+        float horizontalInput =
+            context.InputDirection.x;
+
+        if (Mathf.Abs(horizontalInput) >
+            HorizontalInputThreshold)
+        {
+            return Mathf.Sign(
+                horizontalInput
+            );
+        }
+
+        /*
+         * 좌우 입력이 없다면
+         * 현재 바라보는 방향으로 더블 점프합니다.
+         */
+        return context.FacingDirection.x;
     }
 
     private bool IsDownInput(
         SkillContext context)
     {
         return context.InputDirection.y <
-            DownInputThreshold;
+               DownInputThreshold;
     }
 }
