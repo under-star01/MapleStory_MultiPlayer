@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerSkillController))]
+[RequireComponent(typeof(PlayerInventory))]
 public class PlayerQuickSlotController : MonoBehaviour
 {
     [Serializable]
@@ -21,6 +22,7 @@ public class PlayerQuickSlotController : MonoBehaviour
         quickSlots = new();
 
     private PlayerSkillController skillController;
+    private PlayerInventory inventory;
 
     public event Action BindingsChanged;
 
@@ -28,6 +30,9 @@ public class PlayerQuickSlotController : MonoBehaviour
     {
         skillController =
             GetComponent<PlayerSkillController>();
+
+        inventory =
+            GetComponent<PlayerInventory>();
 
         CreateSlots();
     }
@@ -37,7 +42,11 @@ public class PlayerQuickSlotController : MonoBehaviour
         BindDefaultSkills();
     }
 
-    public bool Execute(
+    /// <summary>
+    /// 슬롯에 등록된 기본 기능을 실행합니다.
+    /// 스킬과 소비 아이템은 서버 실행 경로를 따로 사용합니다.
+    /// </summary>
+    public bool ExecuteBasicAction(
         QuickKey key,
         Vector2 inputDirection)
     {
@@ -48,16 +57,15 @@ public class PlayerQuickSlotController : MonoBehaviour
             return false;
         }
 
-        return slot.Execute(inputDirection);
+        return slot.ExecuteBasicAction(
+            inputDirection
+        );
     }
 
     public bool ExecuteSkill(
         SkillId skillId,
         Vector2 inputDirection)
     {
-        if (skillId == SkillId.None)
-            return false;
-
         if (!skillController.TryGetSkill(
                 skillId,
                 out PlayerSkillBase skill))
@@ -68,6 +76,14 @@ public class PlayerQuickSlotController : MonoBehaviour
         return skillController.TryExecute(
             skill,
             inputDirection
+        );
+    }
+
+    public bool ExecuteConsumable(
+        ConsumableId consumableId)
+    {
+        return inventory.TryUseConsumable(
+            consumableId
         );
     }
 
@@ -86,60 +102,70 @@ public class PlayerQuickSlotController : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 기본 기능 데이터 전체를 지정된 키에 연결합니다.
-    /// </summary>
-    public bool BindBasicAction(
+    public bool BindConsumable(
         QuickKey key,
-        BasicActionData actionData)
+        ConsumableId consumableId)
     {
-        if (actionData == null ||
-            actionData.ActionId == BasicActionId.None ||
-            actionData.Icon == null ||
-            actionData.Command == null)
-        {
-            return false;
-        }
-
-        if (!TryGetSlot(
+        if (!TryBindConsumable(
                 key,
-                out QuickSlot slot))
+                consumableId))
         {
             return false;
         }
-
-        slot.BindBasicAction(actionData);
 
         NotifyBindingsChanged();
         return true;
     }
 
     /// <summary>
-    /// 지정된 키의 바인딩 식별 정보를 조회합니다.
+    /// 기본 기능 데이터 전체를 지정한 키에 연결합니다.
     /// </summary>
-    public bool TryGetBinding(
+    public bool BindBasicAction(
         QuickKey key,
-        out QuickSlotBinding binding)
+        BasicActionData actionData)
     {
-        binding = QuickSlotBinding.Empty();
-
-        if (!TryGetSlot(
+        if (actionData == null ||
+            actionData.ActionId ==
+                BasicActionId.None ||
+            actionData.Icon == null ||
+            actionData.Command == null ||
+            !TryGetSlot(
                 key,
                 out QuickSlot slot))
         {
             return false;
         }
 
-        if (slot.IsEmpty)
+        slot.BindBasicAction(
+            actionData
+        );
+
+        NotifyBindingsChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// 지정한 키의 바인딩 정보를 조회합니다.
+    /// </summary>
+    public bool TryGetBinding(
+        QuickKey key,
+        out QuickSlotBinding binding)
+    {
+        binding =
+            QuickSlotBinding.Empty();
+
+        if (!TryGetSlot(
+                key,
+                out QuickSlot slot) ||
+            slot.IsEmpty)
+        {
             return false;
+        }
 
         binding = slot.Binding;
         return true;
     }
 
-    /// <summary>
-    /// 지정된 키에 연결된 스킬 ID를 조회합니다.
-    /// </summary>
     public bool TryGetBoundSkillId(
         QuickKey key,
         out SkillId skillId)
@@ -148,13 +174,9 @@ public class PlayerQuickSlotController : MonoBehaviour
 
         if (!TryGetBinding(
                 key,
-                out QuickSlotBinding binding))
-        {
-            return false;
-        }
-
-        if (binding.Type !=
-            QuickSlotBindingType.Skill)
+                out QuickSlotBinding binding) ||
+            binding.Type !=
+                QuickSlotBindingType.Skill)
         {
             return false;
         }
@@ -163,17 +185,33 @@ public class PlayerQuickSlotController : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 플레이어가 보유한 스킬의 아이콘을 조회합니다.
-    /// </summary>
+    public bool TryGetBoundConsumableId(
+        QuickKey key,
+        out ConsumableId consumableId)
+    {
+        consumableId =
+            ConsumableId.None;
+
+        if (!TryGetBinding(
+                key,
+                out QuickSlotBinding binding) ||
+            binding.Type !=
+                QuickSlotBindingType.Consumable)
+        {
+            return false;
+        }
+
+        consumableId =
+            binding.ConsumableId;
+
+        return true;
+    }
+
     public bool TryGetSkillIcon(
         SkillId skillId,
         out Sprite icon)
     {
         icon = null;
-
-        if (skillId == SkillId.None)
-            return false;
 
         if (!skillController.TryGetSkill(
                 skillId,
@@ -186,9 +224,23 @@ public class PlayerQuickSlotController : MonoBehaviour
         return icon != null;
     }
 
-    /// <summary>
-    /// 지정된 키에 연결된 기본 기능 데이터를 조회합니다.
-    /// </summary>
+    public bool TryGetConsumableIcon(
+        ConsumableId consumableId,
+        out Sprite icon)
+    {
+        icon = null;
+
+        if (!inventory.TryGetConsumableData(
+                consumableId,
+                out ConsumableData data))
+        {
+            return false;
+        }
+
+        icon = data.Icon;
+        return icon != null;
+    }
+
     public bool TryGetBoundBasicActionData(
         QuickKey key,
         out BasicActionData actionData)
@@ -197,27 +249,23 @@ public class PlayerQuickSlotController : MonoBehaviour
 
         if (!TryGetSlot(
                 key,
-                out QuickSlot slot))
+                out QuickSlot slot) ||
+            slot.Binding.Type !=
+                QuickSlotBindingType.BasicAction ||
+            slot.BasicActionData == null)
         {
             return false;
         }
 
-        if (slot.Binding.Type !=
-            QuickSlotBindingType.BasicAction)
-        {
-            return false;
-        }
+        actionData =
+            slot.BasicActionData;
 
-        if (slot.BasicActionData == null)
-            return false;
-
-        actionData = slot.BasicActionData;
         return true;
     }
 
     /// <summary>
     /// 두 키 슬롯의 내용을 교환합니다.
-    /// 대상이 비어 있으면 이동처럼 동작합니다.
+    /// 대상 슬롯이 비어 있으면 이동처럼 동작합니다.
     /// </summary>
     public bool MoveOrSwap(
         QuickKey sourceKey,
@@ -228,22 +276,18 @@ public class PlayerQuickSlotController : MonoBehaviour
 
         if (!TryGetSlot(
                 sourceKey,
-                out QuickSlot sourceSlot))
-        {
-            return false;
-        }
-
-        if (!TryGetSlot(
+                out QuickSlot sourceSlot) ||
+            !TryGetSlot(
                 targetKey,
-                out QuickSlot targetSlot))
+                out QuickSlot targetSlot) ||
+            sourceSlot.IsEmpty)
         {
             return false;
         }
 
-        if (sourceSlot.IsEmpty)
-            return false;
-
-        sourceSlot.SwapWith(targetSlot);
+        sourceSlot.SwapWith(
+            targetSlot
+        );
 
         NotifyBindingsChanged();
         return true;
@@ -251,8 +295,7 @@ public class PlayerQuickSlotController : MonoBehaviour
 
     /// <summary>
     /// 바인딩을 제거합니다.
-    /// 기본 기능이었다면 복구할 BasicActionData를 반환합니다.
-    /// 스킬이었다면 removedActionData는 null입니다.
+    /// 기본 기능이면 팔레트로 복구할 데이터를 반환합니다.
     /// </summary>
     public bool ClearSlot(
         QuickKey key,
@@ -262,13 +305,11 @@ public class PlayerQuickSlotController : MonoBehaviour
 
         if (!TryGetSlot(
                 key,
-                out QuickSlot slot))
+                out QuickSlot slot) ||
+            slot.IsEmpty)
         {
             return false;
         }
-
-        if (slot.IsEmpty)
-            return false;
 
         removedActionData =
             slot.BasicActionData;
@@ -279,10 +320,8 @@ public class PlayerQuickSlotController : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 반환 데이터가 필요 없는 경우 사용하는 간단한 버전입니다.
-    /// </summary>
-    public bool ClearSlot(QuickKey key)
+    public bool ClearSlot(
+        QuickKey key)
     {
         return ClearSlot(
             key,
@@ -290,16 +329,13 @@ public class PlayerQuickSlotController : MonoBehaviour
         );
     }
 
-    public bool IsSlotEmpty(QuickKey key)
+    public bool IsSlotEmpty(
+        QuickKey key)
     {
-        if (!TryGetSlot(
-                key,
-                out QuickSlot slot))
-        {
-            return false;
-        }
-
-        return slot.IsEmpty;
+        return TryGetSlot(
+                   key,
+                   out QuickSlot slot) &&
+               slot.IsEmpty;
     }
 
     private void CreateSlots()
@@ -342,55 +378,43 @@ public class PlayerQuickSlotController : MonoBehaviour
         NotifyBindingsChanged();
     }
 
-    /// <summary>
-    /// 이벤트를 발생시키지 않고 스킬을 슬롯에 연결합니다.
-    /// 초기 바인딩과 런타임 바인딩에서 공통으로 사용합니다.
-    /// </summary>
     private bool TryBindSkill(
         QuickKey key,
         SkillId skillId)
     {
         if (!TryGetSlot(
                 key,
-                out QuickSlot slot))
-        {
-            return false;
-        }
-
-        if (!TryCreateSkillCommand(
+                out QuickSlot slot) ||
+            !skillController.TryGetSkill(
                 skillId,
-                out IQuickSlotCommand command))
+                out _))
         {
             return false;
         }
 
         slot.BindSkill(
-            skillId,
-            command
+            skillId
         );
 
         return true;
     }
 
-    private bool TryCreateSkillCommand(
-        SkillId skillId,
-        out IQuickSlotCommand command)
+    private bool TryBindConsumable(
+        QuickKey key,
+        ConsumableId consumableId)
     {
-        command = null;
-
-        if (skillId == SkillId.None)
-            return false;
-
-        if (!skillController.TryGetSkill(
-                skillId,
-                out PlayerSkillBase skill))
+        if (!TryGetSlot(
+                key,
+                out QuickSlot slot) ||
+            !inventory.TryGetConsumableData(
+                consumableId,
+                out _))
         {
             return false;
         }
 
-        command = new UseSkillCommand(
-            skillController,
-            skill
+        slot.BindConsumable(
+            consumableId
         );
 
         return true;

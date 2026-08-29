@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class QuickSlot
 {
-    private IQuickSlotCommand command;
-
     public QuickSlotBinding Binding { get; private set; }
         = QuickSlotBinding.Empty();
 
@@ -17,23 +15,21 @@ public class QuickSlot
         private set;
     }
 
-    public bool IsEmpty => command == null;
+    public bool IsEmpty =>
+        Binding.IsEmpty;
 
     public void BindSkill(
-        SkillId skillId,
-        IQuickSlotCommand command)
+        SkillId skillId)
     {
-        if (skillId == SkillId.None ||
-            command == null)
-        {
+        if (skillId == SkillId.None)
             return;
-        }
 
         Binding =
-            QuickSlotBinding.FromSkill(skillId);
+            QuickSlotBinding.FromSkill(
+                skillId
+            );
 
         BasicActionData = null;
-        this.command = command;
     }
 
     /// <summary>
@@ -43,7 +39,8 @@ public class QuickSlot
         BasicActionData actionData)
     {
         if (actionData == null ||
-            actionData.ActionId == BasicActionId.None ||
+            actionData.ActionId ==
+                BasicActionId.None ||
             actionData.Command == null)
         {
             return;
@@ -54,19 +51,15 @@ public class QuickSlot
                 actionData.ActionId
             );
 
-        BasicActionData = actionData;
-        command = actionData.Command;
+        BasicActionData =
+            actionData;
     }
 
-    /// <summary>
-    /// 소비 아이템 데이터 전체를 슬롯에 연결합니다.
-    /// </summary>
     public void BindConsumable(
-        ConsumableId consumableId,
-        IQuickSlotCommand command)
+        ConsumableId consumableId)
     {
-        if (consumableId == ConsumableId.None ||
-            command == null)
+        if (consumableId ==
+            ConsumableId.None)
         {
             return;
         }
@@ -77,29 +70,41 @@ public class QuickSlot
             );
 
         BasicActionData = null;
-        this.command = command;
     }
 
-    public bool Execute(Vector2 inputDirection)
+    /// <summary>
+    /// 슬롯에 등록된 기본 기능을 실행합니다.
+    /// 스킬과 소비 아이템은 서버 실행 경로를 따로 사용합니다.
+    /// </summary>
+    public bool ExecuteBasicAction(
+        Vector2 inputDirection)
     {
-        if (command == null)
+        if (Binding.Type !=
+                QuickSlotBindingType.BasicAction ||
+            BasicActionData?.Command == null)
+        {
             return false;
+        }
 
-        return command.Execute(inputDirection);
+        return BasicActionData.Command.Execute(
+            inputDirection
+        );
     }
 
     public void Clear()
     {
-        Binding = QuickSlotBinding.Empty();
+        Binding =
+            QuickSlotBinding.Empty();
+
         BasicActionData = null;
-        command = null;
     }
 
     /// <summary>
-    /// Command, Binding, BasicActionData를 함께 교환합니다.
+    /// Binding과 BasicActionData를 함께 교환합니다.
     /// 대상이 비어 있으면 이동처럼 동작합니다.
     /// </summary>
-    public void SwapWith(QuickSlot other)
+    public void SwapWith(
+        QuickSlot other)
     {
         if (other == null ||
             ReferenceEquals(this, other))
@@ -107,21 +112,22 @@ public class QuickSlot
             return;
         }
 
-        IQuickSlotCommand tempCommand =
-            command;
-
         QuickSlotBinding tempBinding =
             Binding;
 
         BasicActionData tempActionData =
             BasicActionData;
 
-        command = other.command;
-        Binding = other.Binding;
-        BasicActionData = other.BasicActionData;
+        Binding =
+            other.Binding;
 
-        other.command = tempCommand;
-        other.Binding = tempBinding;
-        other.BasicActionData = tempActionData;
+        BasicActionData =
+            other.BasicActionData;
+
+        other.Binding =
+            tempBinding;
+
+        other.BasicActionData =
+            tempActionData;
     }
 }

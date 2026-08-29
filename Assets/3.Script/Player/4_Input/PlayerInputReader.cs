@@ -31,9 +31,11 @@ public class PlayerInputReader : NetworkBehaviour
 
     private PlayerMove playerMove;
     private PlayerQuickSlotController quickSlotController;
-    private PlayerMapController mapController; private PlayerHealth playerHealth;
+    private PlayerMapController mapController;
+    private PlayerHealth playerHealth;
 
     private Vector2 moveInput;
+
     private bool inputEnabled;
     private bool inputBlocked;
     private bool wasUpPressed;
@@ -46,7 +48,7 @@ public class PlayerInputReader : NetworkBehaviour
 
         quickSlotController =
             GetComponent<PlayerQuickSlotController>();
-        
+
         mapController =
             GetComponent<PlayerMapController>();
 
@@ -57,8 +59,8 @@ public class PlayerInputReader : NetworkBehaviour
     }
 
     /// <summary>
-    /// 이 클라이언트가 해당 플레이어의 권한을 받았을 때 호출됩니다.
-    /// 로컬 플레이어만 입력을 활성화합니다.
+    /// 이 클라이언트가 해당 플레이어의 권한을 받았을 때
+    /// 로컬 입력을 활성화합니다.
     /// </summary>
     public override void OnStartAuthority()
     {
@@ -77,7 +79,8 @@ public class PlayerInputReader : NetworkBehaviour
     }
 
     /// <summary>
-    /// 플레이어에 대한 권한을 잃었을 때 입력을 해제합니다.
+    /// 플레이어에 대한 권한을 잃었을 때
+    /// 입력과 이벤트 연결을 해제합니다.
     /// </summary>
     public override void OnStopAuthority()
     {
@@ -103,7 +106,8 @@ public class PlayerInputReader : NetworkBehaviour
     /// 맵 전환 등으로 로컬 플레이어 입력을
     /// 일시적으로 차단하거나 다시 허용합니다.
     /// </summary>
-    public void SetInputBlocked(bool blocked)
+    public void SetInputBlocked(
+        bool blocked)
     {
         if (!isOwned)
             return;
@@ -122,7 +126,9 @@ public class PlayerInputReader : NetworkBehaviour
         moveInput =
             context.ReadValue<Vector2>();
 
-        CmdSetMoveInput(moveInput.x);
+        CmdSetMoveInput(
+            moveInput.x
+        );
 
         bool isUpPressed =
             moveInput.y > 0.5f;
@@ -137,37 +143,34 @@ public class PlayerInputReader : NetworkBehaviour
             CmdRequestUsePortal();
         }
 
-        wasUpPressed = isUpPressed;
+        wasUpPressed =
+            isUpPressed;
     }
 
     private void OnMoveCanceled(
         InputAction.CallbackContext context)
     {
-        moveInput = Vector2.zero;
-        wasUpPressed = false;
+        moveInput =
+            Vector2.zero;
+
+        wasUpPressed =
+            false;
 
         CmdSetMoveInput(0f);
     }
 
     /// <summary>
-    /// 실행된 InputAction을 QuickKey로 변환합니다.
-    /// 스킬은 서버에 실행을 요청하고,
-    /// 기본 기능은 로컬에서 실행합니다.
+    /// 입력된 키의 퀵슬롯 바인딩을 확인하고
+    /// 종류에 맞는 실행 경로로 전달합니다.
     /// </summary>
     private void OnQuickKeyPerformed(
         InputAction.CallbackContext context)
     {
-        if (inputBlocked)
-            return;
-
-        if (!quickKeyByAction.TryGetValue(
+        if (inputBlocked ||
+            !quickKeyByAction.TryGetValue(
                 context.action,
-                out QuickKey key))
-        {
-            return;
-        }
-
-        if (!quickSlotController.TryGetBinding(
+                out QuickKey key) ||
+            !quickSlotController.TryGetBinding(
                 key,
                 out QuickSlotBinding binding))
         {
@@ -183,11 +186,18 @@ public class PlayerInputReader : NetworkBehaviour
                 );
                 break;
 
-            case QuickSlotBindingType.BasicAction:
-                quickSlotController.Execute(
-                    key,
-                    moveInput
+            case QuickSlotBindingType.Consumable:
+                CmdExecuteConsumable(
+                    binding.ConsumableId
                 );
+                break;
+
+            case QuickSlotBindingType.BasicAction:
+                quickSlotController
+                    .ExecuteBasicAction(
+                        key,
+                        moveInput
+                    );
                 break;
         }
     }
@@ -211,10 +221,14 @@ public class PlayerInputReader : NetworkBehaviour
         DisableMoveInput();
         DisableQuickKeyInputs();
 
-        moveInput = Vector2.zero;
-        wasUpPressed = false;
+        moveInput =
+            Vector2.zero;
 
-        if (isOwned && NetworkClient.active)
+        wasUpPressed =
+            false;
+
+        if (isOwned &&
+            NetworkClient.active)
         {
             CmdSetMoveInput(0f);
         }
@@ -224,11 +238,8 @@ public class PlayerInputReader : NetworkBehaviour
 
     private void EnableMoveInput()
     {
-        if (moveAction == null ||
-            moveAction.action == null)
-        {
+        if (moveAction?.action == null)
             return;
-        }
 
         moveAction.action.performed +=
             OnMovePerformed;
@@ -241,11 +252,8 @@ public class PlayerInputReader : NetworkBehaviour
 
     private void DisableMoveInput()
     {
-        if (moveAction == null ||
-            moveAction.action == null)
-        {
+        if (moveAction?.action == null)
             return;
-        }
 
         moveAction.action.performed -=
             OnMovePerformed;
@@ -318,18 +326,19 @@ public class PlayerInputReader : NetworkBehaviour
         }
     }
 
-    private bool IsValid(
+    private static bool IsValid(
         QuickKeyInputBinding binding)
     {
-        return binding != null &&
-               binding.action != null &&
-               binding.action.action != null;
+        return binding?.action?.action != null;
     }
 
     [Command]
-    private void CmdSetMoveInput(float input)
+    private void CmdSetMoveInput(
+        float input)
     {
-        playerMove.SetMoveInput(input);
+        playerMove.SetMoveInput(
+            input
+        );
     }
 
     [Command]
@@ -344,14 +353,31 @@ public class PlayerInputReader : NetworkBehaviour
         Vector2 inputDirection)
     {
         inputDirection.x =
-            Mathf.Clamp(inputDirection.x, -1f, 1f);
+            Mathf.Clamp(
+                inputDirection.x,
+                -1f,
+                1f
+            );
 
         inputDirection.y =
-            Mathf.Clamp(inputDirection.y, -1f, 1f);
+            Mathf.Clamp(
+                inputDirection.y,
+                -1f,
+                1f
+            );
 
         quickSlotController.ExecuteSkill(
             skillId,
             inputDirection
+        );
+    }
+
+    [Command]
+    private void CmdExecuteConsumable(
+        ConsumableId consumableId)
+    {
+        quickSlotController.ExecuteConsumable(
+            consumableId
         );
     }
 
@@ -388,7 +414,8 @@ public class PlayerInputReader : NetworkBehaviour
     {
         base.OnValidate();
 
-        HashSet<QuickKey> registeredKeys = new();
+        HashSet<QuickKey> registeredKeys =
+            new();
 
         foreach (QuickKeyInputBinding binding
                  in quickKeyInputs)
@@ -396,7 +423,8 @@ public class PlayerInputReader : NetworkBehaviour
             if (binding == null)
                 continue;
 
-            if (!registeredKeys.Add(binding.key))
+            if (!registeredKeys.Add(
+                    binding.key))
             {
                 Debug.LogWarning(
                     $"중복된 QuickKey 입력입니다: " +

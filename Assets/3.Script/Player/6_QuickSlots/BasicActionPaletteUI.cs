@@ -20,6 +20,9 @@ public class BasicActionPaletteUI : MonoBehaviour
     [SerializeField]
     private QuickSlotSettingUI quickSlotSettingUI;
 
+    [SerializeField]
+    private InventoryUI inventoryUI;
+
     [Header("Initial Basic Actions")]
     [SerializeField]
     private List<BasicActionEntry> basicActions = new();
@@ -235,38 +238,38 @@ public class BasicActionPaletteUI : MonoBehaviour
         if (quickSlotSettingUI == null)
         {
             Debug.LogError(
-                $"{nameof(QuickSlotSettingUI)}가 연결되지 않았습니다.",
+                $"{nameof(QuickSlotSettingUI)}가 " +
+                "연결되지 않았습니다.",
                 this
             );
-
-            return;
+        }
+        else
+        {
+            commands.Add(
+                BasicActionId.OpenQuickSlotSetting,
+                new OpenQuickSlotSettingCommand(
+                    quickSlotSettingUI
+                )
+            );
         }
 
-        commands.Add(
-            BasicActionId.OpenQuickSlotSetting,
-            new OpenQuickSlotSettingCommand(
-                quickSlotSettingUI
-            )
-        );
-
-        /*
-         * 기능 구현 후 추가합니다.
-         *
-         * commands.Add(
-         *     BasicActionId.Interact,
-         *     new InteractCommand(...)
-         * );
-         *
-         * commands.Add(
-         *     BasicActionId.OpenSkillWindow,
-         *     new OpenSkillWindowCommand(...)
-         * );
-         *
-         * commands.Add(
-         *     BasicActionId.OpenInventory,
-         *     new OpenInventoryCommand(...)
-         * );
-         */
+        if (inventoryUI == null)
+        {
+            Debug.LogError(
+                $"{nameof(InventoryUI)}가 " +
+                "연결되지 않았습니다.",
+                this
+            );
+        }
+        else
+        {
+            commands.Add(
+                BasicActionId.OpenInventory,
+                new OpenInventoryCommand(
+                    inventoryUI
+                )
+            );
+        }
     }
 
     private bool ContainsAction(
