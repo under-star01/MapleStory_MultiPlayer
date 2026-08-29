@@ -256,6 +256,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   consumableDatabase: {fileID: 11400000, guid: 5da7c28d8e329504f9ae4d7dca1e5f84, type: 2}
+  destroyDelay: 30
 --- !u!114 &3586523212122860355
 MonoBehaviour:
   m_ObjectHideFlags: 0

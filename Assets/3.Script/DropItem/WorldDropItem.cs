@@ -1,3 +1,4 @@
+using System.Collections;
 using Mirror;
 using UnityEngine;
 
@@ -9,6 +10,11 @@ public class WorldDropItem : NetworkBehaviour
     [Header("Data")]
     [SerializeField]
     private ConsumableDatabase consumableDatabase;
+
+    [Header("Lifetime")]
+    [SerializeField]
+    [Min(1f)]
+    private float destroyDelay = 30f;
 
     [SyncVar(hook = nameof(OnConsumableIdChanged))]
     private ConsumableId consumableId =
@@ -24,6 +30,15 @@ public class WorldDropItem : NetworkBehaviour
     {
         spriteRenderer =
             GetComponent<SpriteRenderer>();
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        StartCoroutine(
+            DestroyAfterDelay()
+        );
     }
 
     public override void OnStartClient()
@@ -97,5 +112,17 @@ public class WorldDropItem : NetworkBehaviour
 
         spriteRenderer.sprite =
             data.Icon;
+    }
+
+    [Server]
+    private IEnumerator DestroyAfterDelay()
+    {
+        yield return new WaitForSeconds(
+            destroyDelay
+        );
+
+        NetworkServer.Destroy(
+            gameObject
+        );
     }
 }
