@@ -10,7 +10,7 @@ public class QuickSlotSettingUI :
 {
     [Header("References")]
     [SerializeField]
-    private BasicActionPaletteUI basicActionPaletteUI;
+    private DefaultActionPaletteUI defaultActionPaletteUI;
 
     [SerializeField]
     private Transform keyboard;
@@ -32,7 +32,7 @@ public class QuickSlotSettingUI :
         QuickSlotBinding.Empty();
 
     private BasicActionData pickedBasicActionData;
-    private BasicActionSlotUI pickedPaletteSourceSlot;
+    private DefaultActionSlotUI pickedPaletteSourceSlot;
     private QuickKey? pickedSourceKey;
 
     private bool isBindingsSubscribed;
@@ -71,8 +71,7 @@ public class QuickSlotSettingUI :
     public void Bind(
         LocalPlayerContext context)
     {
-        if (context == null ||
-            context.QuickSlot == null)
+        if (context?.QuickSlot == null)
         {
             Debug.LogError(
                 $"{nameof(PlayerQuickSlotController)}를 " +
@@ -92,7 +91,10 @@ public class QuickSlotSettingUI :
                 context.QuickSlot;
         }
 
-        BindBasicActionPalette();
+        defaultActionPaletteUI?.Bind(
+            quickSlotController
+        );
+
         SubscribeBindingsChanged();
         RefreshAllSlots();
     }
@@ -102,7 +104,7 @@ public class QuickSlotSettingUI :
         UnsubscribeBindingsChanged();
         ClearPickedState(true);
 
-        basicActionPaletteUI?.Unbind();
+        defaultActionPaletteUI?.Unbind();
 
         quickSlotController = null;
 
@@ -118,14 +120,15 @@ public class QuickSlotSettingUI :
         if (IsPicking)
         {
             PlaceOnKey(clickedKey);
-            return;
         }
-
-        PickFromKey(clickedKey);
+        else
+        {
+            PickFromKey(clickedKey);
+        }
     }
 
     /// <summary>
-    /// 스킬 팔레트에서 스킬을 집습니다.
+    /// 일반 스킬창 등에서 스킬을 집습니다.
     /// </summary>
     public void PickSkill(
         SkillId skillId)
@@ -148,9 +151,35 @@ public class QuickSlotSettingUI :
     }
 
     /// <summary>
-    /// 인벤토리에서 소비 아이템을 집습니다.
-    /// 퀵슬롯 설정 창이 열려 있을 때만 가능합니다.
+    /// 기본 제공 팔레트에서 항목을 집습니다.
     /// </summary>
+    public void PickDefaultAction(
+        QuickSlotBinding binding,
+        BasicActionData actionData,
+        DefaultActionSlotUI sourceSlot)
+    {
+        if (!IsOpened ||
+            sourceSlot == null ||
+            !TryGetPickedIcon(
+                binding,
+                actionData,
+                out Sprite icon) ||
+            !BeginPick(
+                binding,
+                icon))
+        {
+            return;
+        }
+
+        pickedBasicActionData =
+            actionData;
+
+        pickedPaletteSourceSlot =
+            sourceSlot;
+
+        sourceSlot.SetIconVisible(false);
+    }
+
     public void PickConsumable(
         ConsumableId consumableId)
     {
@@ -171,46 +200,6 @@ public class QuickSlotSettingUI :
         );
     }
 
-    /// <summary>
-    /// 기본 기능 팔레트에서 기능을 집습니다.
-    /// </summary>
-    public void PickBasicAction(
-        BasicActionData actionData,
-        BasicActionSlotUI sourceSlot)
-    {
-        if (!IsOpened ||
-            actionData == null ||
-            actionData.ActionId ==
-                BasicActionId.None ||
-            actionData.Icon == null ||
-            actionData.Command == null ||
-            sourceSlot == null)
-        {
-            return;
-        }
-
-        if (!BeginPick(
-                QuickSlotBinding.FromBasicAction(
-                    actionData.ActionId
-                ),
-                actionData.Icon))
-        {
-            return;
-        }
-
-        pickedBasicActionData =
-            actionData;
-
-        pickedPaletteSourceSlot =
-            sourceSlot;
-
-        sourceSlot.SetIconVisible(false);
-    }
-
-    /// <summary>
-    /// 빈 공간을 클릭하면 현재 선택을 취소합니다.
-    /// 키 슬롯에서 집은 경우 해당 바인딩을 제거합니다.
-    /// </summary>
     public void OnEmptyAreaClicked()
     {
         if (!IsPicking ||
@@ -219,29 +208,40 @@ public class QuickSlotSettingUI :
             return;
         }
 
-        /*
-         * 팔레트나 인벤토리에서 집은 경우에는
-         * 원래 퀵슬롯 바인딩이 없으므로 선택만 취소합니다.
-         */
         if (!pickedSourceKey.HasValue)
         {
             CancelPick();
             return;
         }
 
-        if (!quickSlotController.ClearSlot(
-                pickedSourceKey.Value,
-                out BasicActionData removedActionData))
+        QuickKey sourceKey =
+            pickedSourceKey.Value;
+
+        if (!quickSlotController.TryGetBinding(
+                sourceKey,
+                out QuickSlotBinding removedBinding))
         {
             return;
         }
 
-        RestoreBasicAction(
+        quickSlotController
+            .TryGetBoundBasicActionData(
+                sourceKey,
+                out BasicActionData removedActionData
+            );
+
+        if (!quickSlotController.ClearSlot(
+                sourceKey))
+        {
+            return;
+        }
+
+        RestoreDefaultAction(
+            removedBinding,
             removedActionData
         );
 
-        ClearPickedState(false);
-        RefreshAllSlots();
+        FinishPick();
     }
 
     public void CancelPick()
@@ -270,10 +270,11 @@ public class QuickSlotSettingUI :
         if (IsOpened)
         {
             Close();
-            return;
         }
-
-        Open();
+        else
+        {
+            Open();
+        }
     }
 
     public void RefreshAllSlots()
@@ -315,12 +316,8 @@ public class QuickSlotSettingUI :
             !TryGetBindingIcon(
                 key,
                 binding,
-                out Sprite icon))
-        {
-            return;
-        }
-
-        if (!BeginPick(
+                out Sprite icon) ||
+            !BeginPick(
                 binding,
                 icon))
         {
@@ -349,105 +346,98 @@ public class QuickSlotSettingUI :
     private void PlaceOnKey(
         QuickKey targetKey)
     {
-        bool success;
-
-        BasicActionData displacedActionData =
-            null;
-
         if (pickedSourceKey.HasValue)
         {
-            QuickKey sourceKey =
-                pickedSourceKey.Value;
+            MoveOrSwap(
+                targetKey
+            );
 
-            if (sourceKey == targetKey)
-            {
-                CancelPick();
-                return;
-            }
-
-            success =
-                quickSlotController.MoveOrSwap(
-                    sourceKey,
-                    targetKey
-                );
-        }
-        else
-        {
-            success =
-                BindPickedToKey(
-                    targetKey,
-                    out displacedActionData
-                );
-        }
-
-        if (!success)
             return;
+        }
 
-        pickedPaletteSourceSlot?.Clear();
-
-        RestoreBasicAction(
-            displacedActionData
+        BindFromPalette(
+            targetKey
         );
-
-        ClearPickedState(false);
-        RefreshAllSlots();
     }
 
-    private bool BindPickedToKey(
-        QuickKey targetKey,
-        out BasicActionData displacedActionData)
+    private void MoveOrSwap(
+        QuickKey targetKey)
     {
-        displacedActionData = null;
+        QuickKey sourceKey =
+            pickedSourceKey.Value;
 
-        /*
-         * 대상 키에 기본 기능이 있다면,
-         * 덮어쓴 뒤 팔레트로 복구하기 위해 미리 가져옵니다.
-         */
+        if (sourceKey == targetKey)
+        {
+            CancelPick();
+            return;
+        }
+
+        if (!quickSlotController.MoveOrSwap(
+                sourceKey,
+                targetKey))
+        {
+            return;
+        }
+
+        FinishPick();
+    }
+
+    private void BindFromPalette(
+        QuickKey targetKey)
+    {
+        quickSlotController.TryGetBinding(
+            targetKey,
+            out QuickSlotBinding displacedBinding
+        );
+
         quickSlotController
             .TryGetBoundBasicActionData(
                 targetKey,
-                out displacedActionData
+                out BasicActionData displacedActionData
             );
 
-        bool success;
+        if (!BindPickedToKey(
+                targetKey))
+        {
+            return;
+        }
 
+        pickedPaletteSourceSlot?.Clear();
+
+        RestoreDefaultAction(
+            displacedBinding,
+            displacedActionData
+        );
+
+        FinishPick();
+    }
+
+    private bool BindPickedToKey(
+        QuickKey targetKey)
+    {
         switch (pickedBinding.Type)
         {
             case QuickSlotBindingType.Skill:
-                success =
-                    quickSlotController.BindSkill(
-                        targetKey,
-                        pickedBinding.SkillId
-                    );
-                break;
+                return quickSlotController.BindSkill(
+                    targetKey,
+                    pickedBinding.SkillId
+                );
 
             case QuickSlotBindingType.BasicAction:
-                success =
-                    quickSlotController.BindBasicAction(
-                        targetKey,
-                        pickedBasicActionData
-                    );
-                break;
+                return quickSlotController.BindBasicAction(
+                    targetKey,
+                    pickedBasicActionData
+                );
 
             case QuickSlotBindingType.Consumable:
-                success =
-                    quickSlotController.BindConsumable(
-                        targetKey,
-                        pickedBinding.ConsumableId
-                    );
-                break;
+                return quickSlotController.BindConsumable(
+                    targetKey,
+                    pickedBinding.ConsumableId
+                );
 
             default:
-                success = false;
-                break;
+                return false;
         }
-
-        if (!success)
-        {
-            displacedActionData = null;
-        }
-
-        return success;
     }
 
     private bool TryGetBindingIcon(
@@ -460,11 +450,10 @@ public class QuickSlotSettingUI :
         switch (binding.Type)
         {
             case QuickSlotBindingType.Skill:
-                return quickSlotController
-                    .TryGetSkillIcon(
-                        binding.SkillId,
-                        out icon
-                    );
+                return quickSlotController.TryGetSkillIcon(
+                    binding.SkillId,
+                    out icon
+                );
 
             case QuickSlotBindingType.BasicAction:
                 if (!quickSlotController
@@ -492,9 +481,33 @@ public class QuickSlotSettingUI :
         }
     }
 
-    /// <summary>
-    /// 현재 선택을 정리한 뒤 새로운 바인딩을 집습니다.
-    /// </summary>
+    private bool TryGetPickedIcon(
+        QuickSlotBinding binding,
+        BasicActionData actionData,
+        out Sprite icon)
+    {
+        icon = null;
+
+        switch (binding.Type)
+        {
+            case QuickSlotBindingType.Skill:
+                return quickSlotController != null &&
+                       quickSlotController.TryGetSkillIcon(
+                           binding.SkillId,
+                           out icon
+                       );
+
+            case QuickSlotBindingType.BasicAction:
+                icon =
+                    actionData?.Icon;
+
+                return icon != null;
+
+            default:
+                return false;
+        }
+    }
+
     private bool BeginPick(
         QuickSlotBinding binding,
         Sprite icon)
@@ -515,6 +528,30 @@ public class QuickSlotSettingUI :
         return true;
     }
 
+    private void RestoreDefaultAction(
+        QuickSlotBinding binding,
+        BasicActionData actionData)
+    {
+        if (binding.Type !=
+                QuickSlotBindingType.Skill &&
+            binding.Type !=
+                QuickSlotBindingType.BasicAction)
+        {
+            return;
+        }
+
+        defaultActionPaletteUI?.RestoreAction(
+            binding,
+            actionData
+        );
+    }
+
+    private void FinishPick()
+    {
+        ClearPickedState(false);
+        RefreshAllSlots();
+    }
+
     private void ClearPickedState(
         bool restorePaletteSlot)
     {
@@ -532,34 +569,6 @@ public class QuickSlotSettingUI :
         pickedSourceKey = null;
 
         SetPickedIcon(null);
-    }
-
-    private void RestoreBasicAction(
-        BasicActionData actionData)
-    {
-        if (actionData == null)
-            return;
-
-        basicActionPaletteUI
-            ?.RestoreAction(actionData);
-    }
-
-    private void BindBasicActionPalette()
-    {
-        if (basicActionPaletteUI == null)
-        {
-            Debug.LogError(
-                $"{nameof(BasicActionPaletteUI)}가 " +
-                "연결되지 않았습니다.",
-                this
-            );
-
-            return;
-        }
-
-        basicActionPaletteUI.Bind(
-            quickSlotController
-        );
     }
 
     private void SubscribeBindingsChanged()
@@ -605,20 +614,16 @@ public class QuickSlotSettingUI :
             return;
         }
 
-        QuickKeySlotUI[] foundSlots =
-            keyboard.GetComponentsInChildren
-                <QuickKeySlotUI>(true);
-
-        foreach (QuickKeySlotUI slot
-                 in foundSlots)
+        foreach (QuickKeySlotUI slot in
+                 keyboard.GetComponentsInChildren
+                     <QuickKeySlotUI>(true))
         {
             if (!keySlots.TryAdd(
                     slot.Key,
                     slot))
             {
                 Debug.LogWarning(
-                    $"중복된 키 슬롯입니다: " +
-                    $"{slot.Key}",
+                    $"중복된 키 슬롯입니다: {slot.Key}",
                     slot
                 );
 
@@ -641,8 +646,7 @@ public class QuickSlotSettingUI :
     private void SetWindowVisible(
         bool visible)
     {
-        IsOpened =
-            visible;
+        IsOpened = visible;
 
         canvasGroup.alpha =
             visible ? 1f : 0f;
@@ -660,14 +664,11 @@ public class QuickSlotSettingUI :
         if (pickedIcon == null)
             return;
 
-        bool visible =
-            icon != null;
-
         pickedIcon.sprite =
             icon;
 
         pickedIcon.gameObject.SetActive(
-            visible
+            icon != null
         );
     }
 
