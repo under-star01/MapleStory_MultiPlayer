@@ -139,9 +139,9 @@ public class PlayerInventory : NetworkBehaviour
             return false;
         }
 
-        if (!TryGetConsumableData(
+        if (!TryGetItemRecord(
                 consumableId,
-                out ConsumableData data))
+                out ItemRecord itemRecord))
         {
             return false;
         }
@@ -154,7 +154,7 @@ public class PlayerInventory : NetworkBehaviour
         int newCount =
             Mathf.Min(
                 currentCount + amount,
-                data.MaxStack
+                itemRecord.MaxStack
             );
 
         /*
@@ -224,10 +224,6 @@ public class PlayerInventory : NetworkBehaviour
         if (playerHealth.IsDead)
             return false;
 
-        /*
-         * 체력이 가득 찬 상태에서는
-         * 물약을 소비하지 않습니다.
-         */
         if (playerHealth.CurrentHp >=
             playerHealth.MaxHp)
         {
@@ -240,18 +236,15 @@ public class PlayerInventory : NetworkBehaviour
             return false;
         }
 
-        if (!TryGetConsumableData(
+        if (!TryGetItemRecord(
                 consumableId,
-                out ConsumableData data))
+                out ItemRecord itemRecord))
         {
             return false;
         }
 
-        if (data.HealAmount <= 0)
-            return false;
-
         playerHealth.Heal(
-            data.HealAmount
+            itemRecord.HealAmount
         );
 
         return TryRemoveConsumable(
@@ -378,5 +371,32 @@ public class PlayerInventory : NetworkBehaviour
             return;
 
         nearestDrop.TryCollect(this);
+    }
+
+    [Server]
+    private bool TryGetItemRecord(
+    ConsumableId consumableId,
+    out ItemRecord record)
+    {
+        record = null;
+
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized)
+        {
+            Debug.LogError(
+                "아이템 DB 데이터가 초기화되지 않았습니다.",
+                this
+            );
+
+            return false;
+        }
+
+        return databaseManager.StaticData.TryGetItem(
+            (int)consumableId,
+            out record
+        );
     }
 }

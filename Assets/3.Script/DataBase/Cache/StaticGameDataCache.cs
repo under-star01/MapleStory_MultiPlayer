@@ -8,6 +8,12 @@ public sealed class StaticGameDataCache
     public int MonsterCount =>
         monsters.Count;
 
+    private readonly Dictionary<int, ItemRecord>
+    items = new();
+
+    public int ItemCount =>
+        items.Count;
+
     /// <summary>
     /// DB에서 읽은 몬스터 데이터를
     /// 서버 메모리 캐시에 저장합니다.
@@ -40,6 +46,35 @@ public sealed class StaticGameDataCache
     {
         return monsters.TryGetValue(
             monsterId,
+            out record
+        );
+    }
+
+    public void SetItems(
+    IEnumerable<ItemRecord> records)
+    {
+        items.Clear();
+
+        foreach (ItemRecord record in records)
+        {
+            if (!items.TryAdd(
+                    record.ItemId,
+                    record))
+            {
+                throw new System.InvalidOperationException(
+                    $"중복된 아이템 ID입니다: " +
+                    $"{record.ItemId}"
+                );
+            }
+        }
+    }
+
+    public bool TryGetItem(
+    int itemId,
+    out ItemRecord record)
+    {
+        return items.TryGetValue(
+            itemId,
             out record
         );
     }
