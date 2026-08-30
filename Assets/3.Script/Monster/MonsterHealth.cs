@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,15 +19,14 @@ public class MonsterHealth : NetworkBehaviour
     [SyncVar(hook = nameof(OnCurrentHpChanged))]
     private int currentHp;
 
+    private int monsterId;
+
     [Header("Death")]
     [SerializeField]
     [Min(0f)]
     private float deathAnimationDuration = 1f;
 
     [Header("Drop")]
-    [SerializeField]
-    private MonsterData monsterData;
-
     [SerializeField]
     private WorldDropItem worldDropItemPrefab;
 
@@ -96,6 +96,15 @@ public class MonsterHealth : NetworkBehaviour
             currentHp,
             maxHp
         );
+    }
+
+    public void ApplyMonsterId(
+    int value)
+    {
+        if (value <= 0)
+            return;
+
+        monsterId = value;
     }
 
     /// <summary>
@@ -201,30 +210,48 @@ public class MonsterHealth : NetworkBehaviour
     [Server]
     private void SpawnDrops()
     {
-        if (monsterData == null ||
-            worldDropItemPrefab == null)
+        if (worldDropItemPrefab == null)
+            return;
+
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized)
         {
             return;
         }
 
-        foreach (MonsterData.DropEntry entry
-                 in monsterData.Drops)
+        if (!databaseManager.StaticData
+                .TryGetMonsterDrops(
+                    monsterId,
+                    out IReadOnlyList
+                        <MonsterDropRecord> drops))
         {
-            if (entry == null ||
-                entry.consumableId ==
-                    ConsumableId.None ||
-                entry.dropChance <= 0f)
-            {
-                continue;
-            }
+            return;
+        }
 
+        foreach (MonsterDropRecord dropRecord
+                 in drops)
+        {
             if (UnityEngine.Random.value >
-                entry.dropChance)
+                dropRecord.DropRate)
             {
                 continue;
             }
 
-            Vector3 spawnPosition = transform.position + (Vector3)dropSpawnOffset;
+            ConsumableId consumableId =
+                (ConsumableId)dropRecord.ItemId;
+
+            if (consumableId ==
+                ConsumableId.None)
+            {
+                continue;
+            }
+
+            Vector3 spawnPosition =
+                transform.position +
+                (Vector3)dropSpawnOffset;
 
             WorldDropItem drop =
                 Instantiate(
@@ -233,17 +260,13 @@ public class MonsterHealth : NetworkBehaviour
                     Quaternion.identity
                 );
 
-            /*
-             * 서버가 여러 맵 씬을 동시에 로드하므로,
-             * 드롭 아이템을 몬스터와 같은 맵 씬에 둡니다.
-             */
             SceneManager.MoveGameObjectToScene(
                 drop.gameObject,
                 gameObject.scene
             );
 
             drop.Initialize(
-                entry.consumableId
+                consumableId
             );
 
             NetworkServer.Spawn(

@@ -76,12 +76,20 @@ public class DatabaseManager : MonoBehaviour
                 new ItemRepository(
                     connectionString
                 );
+    
+            MonsterDropRepository dropRepository =
+                new MonsterDropRepository(
+                    connectionString
+                );
 
             List<MonsterRecord> monsters =
                 await monsterRepository.LoadAllAsync();
 
             List<ItemRecord> items =
                 await itemRepository.LoadAllAsync();
+
+            List<MonsterDropRecord> monsterDrops =
+                await dropRepository.LoadAllAsync();
 
             StaticData =
                 new StaticGameDataCache();
@@ -94,12 +102,17 @@ public class DatabaseManager : MonoBehaviour
                 items
             );
 
+            StaticData.SetMonsterDrops(
+                monsterDrops
+            );
+
             IsInitialized = true;
 
             Debug.Log(
                 $"[Database] 정적 데이터 초기화 완료 / " +
                 $"Monster: {StaticData.MonsterCount}, " +
-                $"Item: {StaticData.ItemCount}"
+                $"Item: {StaticData.ItemCount}, " +
+                $"MonsterDrop: {StaticData.MonsterDropCount}"
             );
         }
         catch (System.Exception exception)

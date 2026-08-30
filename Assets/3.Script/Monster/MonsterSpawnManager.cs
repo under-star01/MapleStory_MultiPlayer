@@ -237,6 +237,10 @@ public class MonsterSpawnManager : NetworkBehaviour
             return false;
         }
 
+        monsterHealth.ApplyMonsterId(
+            record.MonsterId
+        );
+
         monsterHealth.ApplyMaxHp(
             record.MaxHp
         );
@@ -457,6 +461,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         SpawnEntry entry)
     {
         if (entry != null &&
+            entry.monsterId > 0 &&
             entry.monsterPrefab != null &&
             entry.spawnPoint != null)
         {
