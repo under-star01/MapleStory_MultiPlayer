@@ -11,7 +11,12 @@ public class MonsterHealth : NetworkBehaviour
 {
     [Header("Health")]
     [SerializeField]
-    private int maxHp = 5;
+    [SyncVar(hook = nameof(OnMaxHpChanged))]
+    private int maxHp = 300;
+
+    [SerializeField]
+    [SyncVar(hook = nameof(OnCurrentHpChanged))]
+    private int currentHp;
 
     [Header("Death")]
     [SerializeField]
@@ -27,10 +32,6 @@ public class MonsterHealth : NetworkBehaviour
 
     [SerializeField]
     private Vector2 dropSpawnOffset = new Vector2(0f, 0.3f);
-
-    [SerializeField]
-    [SyncVar(hook = nameof(OnCurrentHpChanged))]
-    private int currentHp;
 
     [SyncVar]
     private bool isDead;
@@ -310,6 +311,16 @@ public class MonsterHealth : NetworkBehaviour
         );
 
         DeathCompleted?.Invoke(this);
+    }
+
+    private void OnMaxHpChanged(
+    int previousMaxHp,
+    int newMaxHp)
+    {
+        HealthChanged?.Invoke(
+            currentHp,
+            newMaxHp
+        );
     }
 
     private void OnCurrentHpChanged(

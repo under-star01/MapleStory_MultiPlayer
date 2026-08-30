@@ -204,7 +204,8 @@ public class MonsterMovement : NetworkBehaviour
 
                 rigidBody.linearVelocity =
                     new Vector2(
-                        moveDirection * moveSpeed,
+                        moveDirection *
+                        (isHit ? 0f : moveSpeed),
                         rigidBody.linearVelocity.y
                     );
 
@@ -272,8 +273,7 @@ public class MonsterMovement : NetworkBehaviour
     }
 
     /// <summary>
-    /// 피격 애니메이션이 재생되는 동안
-    /// 현재 이동과 순찰을 중단합니다.
+    /// 피격 애니메이션이 재생되는 동안 잠시 이동을 중단합니다.
     /// </summary>
     [Server]
     public void OnHit()
@@ -283,38 +283,20 @@ public class MonsterMovement : NetworkBehaviour
 
         isHit = true;
 
-        if (patrolCoroutine != null)
-        {
-            StopCoroutine(
-                patrolCoroutine
+        rigidBody.linearVelocity =
+            new Vector2(
+                0f,
+                rigidBody.linearVelocity.y
             );
-
-            patrolCoroutine = null;
-        }
-
-        StopMoving();
     }
 
-    /// <summary>
-    /// 피격 애니메이션 종료 후
-    /// 몬스터의 순찰을 다시 시작합니다.
-    /// </summary>
     [Server]
     public void OnHitEnded()
     {
-        if (monsterHealth.IsDead ||
-            !isHit)
-        {
+        if (monsterHealth.IsDead)
             return;
-        }
 
         isHit = false;
-
-        if (patrolCoroutine == null)
-        {
-            patrolCoroutine =
-                StartCoroutine(Patrol());
-        }
     }
 
     /// <summary>
