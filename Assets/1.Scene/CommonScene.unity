@@ -16275,6 +16275,7 @@ GameObject:
   - component: {fileID: 1965684449}
   - component: {fileID: 1965684451}
   - component: {fileID: 1965684453}
+  - component: {fileID: 1965684454}
   - component: {fileID: 1965684447}
   - component: {fileID: 1965684450}
   - component: {fileID: 1965684452}
@@ -16357,7 +16358,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapNetworkManager
   dontDestroyOnLoad: 1
   runInBackground: 1
-  headlessStartMode: 0
+  headlessStartMode: 1
   editorAutoStart: 0
   sendRate: 60
   offlineScene: 
@@ -16425,6 +16426,18 @@ MonoBehaviour:
     sceneName: 1_BattleField
   - mapId: 2
     sceneName: 2_BattleField
+--- !u!114 &1965684454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965684445}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab626f085a345fd4c914f05c565ef920, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DatabaseManager
 --- !u!1 &2015895347
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,6 +11,9 @@ public class MonsterSpawnManager : NetworkBehaviour
     private class SpawnEntry
     {
         [Header("Spawn")]
+        [Min(1)]
+        public int monsterId;
+        
         public MonsterHealth monsterPrefab;
         public Transform spawnPoint;
 
@@ -151,20 +154,24 @@ public class MonsterSpawnManager : NetworkBehaviour
             return;
 
         MonsterHealth monster =
-            Instantiate(
-                entry.monsterPrefab,
-                entry.spawnPoint.position,
-                entry.spawnPoint.rotation
-            );
+    Instantiate(
+        entry.monsterPrefab,
+        entry.spawnPoint.position,
+        entry.spawnPoint.rotation
+    );
 
-        /*
-         * 맵별 독립 PhysicsScene2D 안에서
-         * 물리가 처리되도록 같은 씬으로 이동합니다.
-         */
         SceneManager.MoveGameObjectToScene(
             monster.gameObject,
             gameObject.scene
         );
+
+        if (!TryApplyMonsterData(
+                entry.monsterId,
+                monster))
+        {
+            Destroy(monster.gameObject);
+            return;
+        }
 
         entry.monsterInstance =
             monster;
@@ -177,6 +184,82 @@ public class MonsterSpawnManager : NetworkBehaviour
         );
 
         entry.isSpawned = true;
+    }
+
+    private bool TryApplyMonsterData(
+        int monsterId,
+        MonsterHealth monsterHealth)
+    {
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized)
+        {
+            Debug.LogError(
+                "DB 데이터가 초기화되지 않았습니다.",
+                this
+            );
+
+            return false;
+        }
+
+        if (!databaseManager.StaticData.TryGetMonster(
+                monsterId,
+                out MonsterRecord record))
+        {
+            Debug.LogError(
+                $"몬스터 DB 데이터를 찾지 못했습니다: " +
+                $"{monsterId}",
+                this
+            );
+
+            return false;
+        }
+
+        MonsterMovement monsterMovement =
+            monsterHealth.GetComponent
+                <MonsterMovement>();
+
+        MonsterCombat monsterCombat =
+            monsterHealth.GetComponent
+                <MonsterCombat>();
+
+        if (monsterMovement == null ||
+            monsterCombat == null)
+        {
+            Debug.LogError(
+                $"몬스터 초기화 컴포넌트를 찾지 못했습니다: " +
+                $"{monsterId}",
+                monsterHealth
+            );
+
+            return false;
+        }
+
+        monsterHealth.ApplyMaxHp(
+            record.MaxHp
+        );
+
+        monsterMovement.ApplyMoveSpeed(
+            record.MoveSpeed
+        );
+
+        monsterCombat.ApplyContactDamage(
+            record.AttackPower
+        );
+
+        Debug.Log(
+            $"[Monster Initialize] " +
+            $"Id: {record.MonsterId}, " +
+            $"Name: {record.MonsterName}, " +
+            $"HP: {record.MaxHp}, " +
+            $"Attack: {record.AttackPower}, " +
+            $"Speed: {record.MoveSpeed}",
+            monsterHealth
+        );
+
+        return true;
     }
 
     /// <summary>

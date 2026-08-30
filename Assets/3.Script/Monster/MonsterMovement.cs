@@ -14,6 +14,8 @@ public class MonsterMovement : NetworkBehaviour
     [Header("Movement")]
     [SerializeField]
     private float moveSpeed = 1.2f;
+    public float MoveSpeed =>
+    moveSpeed;
 
     [SerializeField]
     private float minMoveTime = 0.7f;
@@ -527,6 +529,15 @@ public class MonsterMovement : NetworkBehaviour
         );
 
         patrolCoroutine = null;
+    }
+
+    public void ApplyMoveSpeed(
+    float value)
+    {
+        if (value < 0f)
+            return;
+
+        moveSpeed = value;
     }
 
 #if UNITY_EDITOR

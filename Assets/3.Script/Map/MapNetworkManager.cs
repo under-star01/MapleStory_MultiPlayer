@@ -68,7 +68,7 @@ public class MapNetworkManager : NetworkManager
 
         loadMapsCoroutine =
             StartCoroutine(
-                LoadServerMaps()
+                InitializeServerMaps()
             );
     }
 
@@ -161,12 +161,58 @@ public class MapNetworkManager : NetworkManager
         base.OnServerDisconnect(conn);
     }
 
-    private IEnumerator LoadServerMaps()
+    private IEnumerator InitializeServerMaps()
     {
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null)
+        {
+            Debug.LogError(
+                $"{nameof(DatabaseManager)}를 " +
+                "찾지 못했습니다.",
+                this
+            );
+
+            loadMapsCoroutine = null;
+            StopServer();
+            yield break;
+        }
+
+        /*
+         * 이 메서드는 OnStartServer에서 실행되므로,
+         * 실제 Mirror 서버가 시작된 경우에만
+         * DB 초기화를 요청합니다.
+         */
+        databaseManager.BeginInitialization();
+
+        yield return new WaitUntil(
+            () => databaseManager
+                .IsInitializationComplete
+        );
+
+        if (!databaseManager.IsInitialized)
+        {
+            Debug.LogError(
+                "DB 초기화에 실패하여 " +
+                "서버 맵 로드를 중단합니다.",
+                this
+            );
+
+            loadMapsCoroutine = null;
+            StopServer();
+            yield break;
+        }
+
         yield return
             mapSceneManager.LoadAllServerMaps();
 
         loadMapsCoroutine = null;
+
+        Debug.Log(
+            "[Server] DB 초기화 및 서버 맵 로드 완료",
+            this
+        );
     }
 
     private IEnumerator SendInitialMapWhenReady(

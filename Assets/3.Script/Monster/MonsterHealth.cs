@@ -321,4 +321,13 @@ public class MonsterHealth : NetworkBehaviour
             maxHp
         );
     }
+
+    public void ApplyMaxHp(
+        int value)
+    {
+        if (value <= 0)
+            return;
+
+        maxHp = value;
+    }
 }

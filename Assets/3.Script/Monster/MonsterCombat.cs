@@ -10,6 +10,9 @@ public class MonsterCombat : NetworkBehaviour
     [Min(1)]
     private int contactDamage = 10;
 
+    public int ContactDamage =>
+    contactDamage;
+
     [SerializeField]
     [Min(0.1f)]
     private float damageInterval = 1f;
@@ -79,5 +82,14 @@ public class MonsterCombat : NetworkBehaviour
     private void OnDisable()
     {
         nextDamageTimes.Clear();
+    }
+
+    public void ApplyContactDamage(
+    int value)
+    {
+        if (value <= 0)
+            return;
+
+        contactDamage = value;
     }
 }
