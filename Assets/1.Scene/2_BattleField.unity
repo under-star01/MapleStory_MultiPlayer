@@ -2116,7 +2116,7 @@ GameObject:
   m_Component:
   - component: {fileID: 307206447}
   m_Layer: 0
-  m_Name: SpawnPoints
+  m_Name: Player_SpawnPoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2874,7 +2874,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapPortal
   targetMapId: 1
-  targetSpawnId: Spawn1
+  targetSpawnId: Spawn_FromBattleField2
 --- !u!61 &404491464
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3333,7 +3333,7 @@ GameObject:
   - component: {fileID: 462616124}
   - component: {fileID: 462616125}
   m_Layer: 0
-  m_Name: Default
+  m_Name: Spawn0
   m_TagString: Untagged
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -3367,7 +3367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapSpawnPoint
   mapId: 2
-  spawnId: Default
+  spawnId: Spawn_FromBattleField1
 --- !u!1 &468731368
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,3 +1,9 @@
-monster_id,monster_name,max_hp,attack_power,move_speed
-1001,局国饭,80,5,0.6
-1002,公寸国饭,600,30,2.2
+0_MainTown
+- Spawn_FromBattleField1
+
+1_BattleField
+- Spawn_FromMainTown
+- Spawn_FromBattleField2
+
+2_BattleField
+- Spawn_FromBattleField1

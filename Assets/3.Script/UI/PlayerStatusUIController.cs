@@ -5,11 +5,24 @@ public class PlayerStatusUIController :
     MonoBehaviour,
     ILocalPlayerUI
 {
+    [SerializeField]
+    private bool startOpened;
+    public bool IsOpened { get; private set; }
+
     [Header("Health")]
     [SerializeField]
     private Image hpFillImage;
 
     private PlayerHealth playerHealth;
+    private CanvasGroup canvasGroup;
+
+    private void Awake()
+    {
+        canvasGroup =
+            GetComponent<CanvasGroup>();
+
+        SetWindowVisible(startOpened);
+    }
 
     public void Bind(
         LocalPlayerContext context)
@@ -38,12 +51,16 @@ public class PlayerStatusUIController :
             playerHealth.CurrentHp,
             playerHealth.MaxHp
         );
+
+        SetWindowVisible(true);
     }
 
     public void Unbind()
     {
         if (playerHealth == null)
             return;
+
+        SetWindowVisible(false);
 
         playerHealth.HealthChanged -=
             UpdateHealth;
@@ -69,5 +86,20 @@ public class PlayerStatusUIController :
     private void OnDestroy()
     {
         Unbind();
+    }
+
+    private void SetWindowVisible(
+    bool visible)
+    {
+        IsOpened = visible;
+
+        canvasGroup.alpha =
+            visible ? 1f : 0f;
+
+        canvasGroup.interactable =
+            visible;
+
+        canvasGroup.blocksRaycasts =
+            visible;
     }
 }

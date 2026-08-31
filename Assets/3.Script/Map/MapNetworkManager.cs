@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(MapSceneManager))]
+[RequireComponent(typeof(AccountNetworkController))]
+[RequireComponent(typeof(InitialMapEntryController))]
 public class MapNetworkManager : NetworkManager
 {
     private class PendingMapTransition
@@ -21,12 +23,6 @@ public class MapNetworkManager : NetworkManager
         }
     }
 
-    private const string DefaultSpawnId = "Default";
-
-    [Header("Initial Map")]
-    [SerializeField]
-    private MapId initialMapId = MapId.MainTown;
-
     [Header("Map Transition")]
     [SerializeField]
     private MapTransitionUI mapTransitionUI;
@@ -42,6 +38,13 @@ public class MapNetworkManager : NetworkManager
         monsterSpawnManagers = new();
 
     private MapSceneManager mapSceneManager;
+
+    private AccountNetworkController
+        accountNetworkController;
+
+    private InitialMapEntryController
+        initialMapEntryController;
+
     private Coroutine loadMapsCoroutine;
 
     public override void Awake()
@@ -50,16 +53,20 @@ public class MapNetworkManager : NetworkManager
 
         mapSceneManager =
             GetComponent<MapSceneManager>();
+
+        accountNetworkController =
+            GetComponent<AccountNetworkController>();
+
+        initialMapEntryController =
+            GetComponent<InitialMapEntryController>();
     }
 
     public override void OnStartServer()
     {
         base.OnStartServer();
 
-        NetworkServer.RegisterHandler
-            <MapLoadedMessage>(
-                OnServerMapLoaded
-            );
+        accountNetworkController.StartServer();
+        initialMapEntryController.StartServer();
 
         NetworkServer.RegisterHandler
             <TransitionMapLoadedMessage>(
@@ -74,8 +81,8 @@ public class MapNetworkManager : NetworkManager
 
     public override void OnStopServer()
     {
-        NetworkServer.UnregisterHandler
-            <MapLoadedMessage>();
+        accountNetworkController.StopServer();
+        initialMapEntryController.StopServer();
 
         NetworkServer.UnregisterHandler
             <TransitionMapLoadedMessage>();
@@ -98,10 +105,8 @@ public class MapNetworkManager : NetworkManager
     {
         base.OnStartClient();
 
-        NetworkClient.RegisterHandler
-            <LoadMapMessage>(
-                OnClientLoadMap
-            );
+        accountNetworkController.StartClient();
+        initialMapEntryController.StartClient();
 
         NetworkClient.RegisterHandler
             <LoadTransitionMapMessage>(
@@ -116,8 +121,8 @@ public class MapNetworkManager : NetworkManager
 
     public override void OnStopClient()
     {
-        NetworkClient.UnregisterHandler
-            <LoadMapMessage>();
+        accountNetworkController.StopClient();
+        initialMapEntryController.StopClient();
 
         NetworkClient.UnregisterHandler
             <LoadTransitionMapMessage>();
@@ -133,14 +138,22 @@ public class MapNetworkManager : NetworkManager
     {
         base.OnServerConnect(conn);
 
-        StartCoroutine(
-            SendInitialMapWhenReady(conn)
+        Debug.Log(
+            "[Server] 클라이언트 연결 완료 / " +
+            "로그인 요청 대기",
+            this
         );
     }
 
     public override void OnServerDisconnect(
         NetworkConnectionToClient conn)
     {
+        initialMapEntryController
+            .RemoveConnection(conn);
+
+        accountNetworkController
+            .RemoveConnection(conn);
+
         pendingTransitions.Remove(conn);
 
         if (conn != null &&
@@ -215,61 +228,6 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
-    private IEnumerator SendInitialMapWhenReady(
-        NetworkConnectionToClient conn)
-    {
-        yield return new WaitUntil(
-            () => mapSceneManager.AreServerMapsLoaded
-        );
-
-        if (conn == null)
-            yield break;
-
-        conn.Send(
-            new LoadMapMessage
-            {
-                MapId = initialMapId
-            }
-        );
-    }
-
-    private void OnClientLoadMap(
-        LoadMapMessage message)
-    {
-        StartCoroutine(
-            LoadClientMapAndNotifyServer(
-                message.MapId
-            )
-        );
-    }
-
-    private IEnumerator LoadClientMapAndNotifyServer(
-        MapId mapId)
-    {
-        yield return
-            mapSceneManager.LoadClientMap(mapId);
-
-        if (!IsClientMapLoaded(
-                mapId,
-                out string sceneName))
-        {
-            yield break;
-        }
-
-        NetworkClient.Send(
-            new MapLoadedMessage
-            {
-                MapId = mapId
-            }
-        );
-
-        Debug.Log(
-            $"클라이언트 맵 씬 로드 완료: " +
-            $"{mapId} / {sceneName}",
-            this
-        );
-    }
-
     private void OnClientLoadTransitionMap(
         LoadTransitionMapMessage message)
     {
@@ -281,7 +239,7 @@ public class MapNetworkManager : NetworkManager
     }
 
     private IEnumerator BeginClientMapTransition(
-    MapId mapId)
+        MapId mapId)
     {
         if (!TryGetLocalInputReader(
                 out PlayerInputReader inputReader))
@@ -292,17 +250,24 @@ public class MapNetworkManager : NetworkManager
         if (mapTransitionUI == null)
         {
             Debug.LogError(
-                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
+                $"{nameof(MapTransitionUI)}가 " +
+                "연결되지 않았습니다.",
                 this
             );
 
             yield break;
         }
 
-        // 전환 시작과 동시에 모든 플레이어 입력을 차단합니다.
+        /*
+         * 전환 시작과 동시에
+         * 모든 플레이어 입력을 차단합니다.
+         */
         inputReader.SetInputBlocked(true);
 
-        // 화면이 완전히 검게 된 다음 맵을 로드합니다.
+        /*
+         * 화면이 완전히 검게 된 다음
+         * 목적지 맵을 로드합니다.
+         */
         yield return mapTransitionUI.FadeOut();
 
         yield return
@@ -312,7 +277,10 @@ public class MapNetworkManager : NetworkManager
                 mapId,
                 out string sceneName))
         {
-            // 로드에 실패하면 기존 화면으로 돌아가고 입력을 복구합니다.
+            /*
+             * 로드에 실패하면 기존 화면으로 돌아가고
+             * 입력을 복구합니다.
+             */
             yield return mapTransitionUI.FadeIn();
 
             inputReader.SetInputBlocked(false);
@@ -413,7 +381,7 @@ public class MapNetworkManager : NetworkManager
         {
             Debug.LogWarning(
                 "요청되지 않은 맵 전환 응답입니다.",
-                conn.identity
+                conn?.identity
             );
 
             return;
@@ -425,7 +393,7 @@ public class MapNetworkManager : NetworkManager
                 $"맵 전환 정보가 일치하지 않습니다: " +
                 $"{transition.TargetMapId} / " +
                 $"{message.MapId}",
-                conn.identity
+                conn?.identity
             );
 
             pendingTransitions.Remove(conn);
@@ -471,7 +439,8 @@ public class MapNetworkManager : NetworkManager
             return;
         }
 
-        GameObject player = conn.identity.gameObject;
+        GameObject player =
+            conn.identity.gameObject;
 
         PlayerMove playerMove =
             player.GetComponent<PlayerMove>();
@@ -487,8 +456,8 @@ public class MapNetworkManager : NetworkManager
             playerHealth == null)
         {
             Debug.LogError(
-                "플레이어의 맵 이동 또는 체력 컴포넌트를 " +
-                "찾지 못했습니다.",
+                "플레이어의 맵 이동 또는 " +
+                "체력 컴포넌트를 찾지 못했습니다.",
                 player
             );
 
@@ -496,27 +465,36 @@ public class MapNetworkManager : NetworkManager
             return;
         }
 
-        MapId previousMapId = mapController.CurrentMapId;
+        MapId previousMapId =
+            mapController.CurrentMapId;
 
         NotifyPlayerExitedMap(
-           previousMapId
+            previousMapId
         );
 
-        // 목적지의 독립 PhysicsScene2D로 이동합니다.
+        /*
+         * 목적지의 독립 PhysicsScene2D로
+         * 플레이어를 이동합니다.
+         */
         SceneManager.MoveGameObjectToScene(
             player,
             targetScene
         );
 
-        playerMove.MovePosition(spawnPoint.position);
+        playerMove.MovePosition(
+            spawnPoint.position
+        );
 
-        mapController.SetCurrentMap(transition.TargetMapId);
+        mapController.SetCurrentMap(
+            transition.TargetMapId
+        );
 
         NotifyPlayerEnteredMap(
             transition.TargetMapId
         );
+
         /*
-         * 마을의 부활 위치로 이동이 완료된 뒤
+         * 마을의 부활 위치로 이동한 경우
          * 사망 상태와 체력을 복구합니다.
          */
         if (playerHealth.IsDead &&
@@ -527,7 +505,7 @@ public class MapNetworkManager : NetworkManager
 
         /*
          * Scene Interest Management가 변경된
-         * 플레이어의 Scene을 다시 반영하도록 합니다.
+         * 플레이어의 Scene을 다시 반영합니다.
          */
         NetworkServer.RebuildObservers(
             conn.identity,
@@ -538,7 +516,8 @@ public class MapNetworkManager : NetworkManager
             new CompleteMapTransitionMessage
             {
                 PreviousMapId = previousMapId,
-                CurrentMapId = transition.TargetMapId
+                CurrentMapId =
+                    transition.TargetMapId
             }
         );
 
@@ -553,118 +532,8 @@ public class MapNetworkManager : NetworkManager
         pendingTransitions.Remove(conn);
     }
 
-    private bool IsClientMapLoaded(
-        MapId mapId,
-        out string sceneName)
-    {
-        if (!mapSceneManager.TryGetSceneName(
-                mapId,
-                out sceneName))
-        {
-            return false;
-        }
-
-        Scene scene =
-            SceneManager.GetSceneByName(sceneName);
-
-        return scene.isLoaded;
-    }
-
-    private void OnServerMapLoaded(
-        NetworkConnectionToClient conn,
-        MapLoadedMessage message)
-    {
-        if (conn.identity != null)
-        {
-            Debug.LogWarning(
-                "해당 연결에는 이미 플레이어가 존재합니다.",
-                conn.identity
-            );
-
-            return;
-        }
-
-        if (!mapSceneManager.TryGetLoadedScene(
-                message.MapId,
-                out Scene targetScene))
-        {
-            Debug.LogError(
-                $"서버 맵 씬을 찾지 못했습니다: " +
-                $"{message.MapId}",
-                this
-            );
-
-            return;
-        }
-
-        Transform spawnPoint =
-            mapSceneManager.FindSpawnPoint(
-                message.MapId,
-                DefaultSpawnId
-            );
-
-        if (spawnPoint == null)
-        {
-            Debug.LogError(
-                $"스폰 지점을 찾지 못했습니다: " +
-                $"{message.MapId} / " +
-                $"{DefaultSpawnId}",
-                this
-            );
-
-            return;
-        }
-
-        GameObject player =
-            Instantiate(
-                playerPrefab,
-                spawnPoint.position,
-                spawnPoint.rotation
-            );
-
-        PlayerMapController mapController =
-            player.GetComponent<PlayerMapController>();
-
-        if (mapController == null)
-        {
-            Debug.LogError(
-                $"{nameof(PlayerMapController)}가 " +
-                "Player Prefab에 없습니다.",
-                player
-            );
-
-            Destroy(player);
-            return;
-        }
-
-        mapController.SetCurrentMap(
-            message.MapId
-        );
-
-        SceneManager.MoveGameObjectToScene(
-            player,
-            targetScene
-        );
-
-        NetworkServer.AddPlayerForConnection(
-            conn,
-            player
-        );
-
-        NotifyPlayerEnteredMap(
-            message.MapId
-        );
-
-        Debug.Log(
-            $"플레이어 생성 완료: " +
-            $"{message.MapId} / " +
-            $"{spawnPoint.position}",
-            player
-        );
-    }
-
     private void OnClientCompleteMapTransition(
-    CompleteMapTransitionMessage message)
+        CompleteMapTransitionMessage message)
     {
         StartCoroutine(
             CompleteClientMapTransition(
@@ -675,8 +544,8 @@ public class MapNetworkManager : NetworkManager
     }
 
     private IEnumerator CompleteClientMapTransition(
-    MapId previousMapId,
-    MapId currentMapId)
+        MapId previousMapId,
+        MapId currentMapId)
     {
         NetworkIdentity localPlayerIdentity =
             NetworkClient.localPlayer;
@@ -707,8 +576,8 @@ public class MapNetworkManager : NetworkManager
             inputReader == null)
         {
             Debug.LogError(
-                "맵 전환에 필요한 플레이어 컴포넌트를 " +
-                "찾지 못했습니다.",
+                "맵 전환에 필요한 플레이어 " +
+                "컴포넌트를 찾지 못했습니다.",
                 localPlayer
             );
 
@@ -730,9 +599,10 @@ public class MapNetworkManager : NetworkManager
 
         if (cameraSettleDelay > 0f)
         {
-            yield return new WaitForSecondsRealtime(
-                cameraSettleDelay
-            );
+            yield return
+                new WaitForSecondsRealtime(
+                    cameraSettleDelay
+                );
         }
 
         if (mapTransitionUI != null)
@@ -742,7 +612,8 @@ public class MapNetworkManager : NetworkManager
         else
         {
             Debug.LogError(
-                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
+                $"{nameof(MapTransitionUI)}가 " +
+                "연결되지 않았습니다.",
                 this
             );
         }
@@ -757,7 +628,7 @@ public class MapNetworkManager : NetworkManager
     }
 
     private bool TryGetLocalInputReader(
-    out PlayerInputReader inputReader)
+        out PlayerInputReader inputReader)
     {
         inputReader = null;
 
@@ -775,13 +646,15 @@ public class MapNetworkManager : NetworkManager
         }
 
         inputReader =
-            localPlayer.GetComponent<PlayerInputReader>();
+            localPlayer.GetComponent
+                <PlayerInputReader>();
 
         if (inputReader != null)
             return true;
 
         Debug.LogError(
-            $"{nameof(PlayerInputReader)}를 찾지 못했습니다.",
+            $"{nameof(PlayerInputReader)}를 " +
+            "찾지 못했습니다.",
             localPlayer
         );
 
@@ -789,7 +662,7 @@ public class MapNetworkManager : NetworkManager
     }
 
     private IEnumerator RecoverClientTransition(
-    PlayerInputReader inputReader = null)
+        PlayerInputReader inputReader = null)
     {
         if (mapTransitionUI != null)
         {
@@ -799,13 +672,33 @@ public class MapNetworkManager : NetworkManager
         inputReader?.SetInputBlocked(false);
     }
 
+    private bool IsClientMapLoaded(
+        MapId mapId,
+        out string sceneName)
+    {
+        if (!mapSceneManager.TryGetSceneName(
+                mapId,
+                out sceneName))
+        {
+            return false;
+        }
+
+        Scene scene =
+            SceneManager.GetSceneByName(sceneName);
+
+        return scene.isLoaded;
+    }
+
     private bool TryGetMonsterSpawnManager(
         MapId mapId,
         out MonsterSpawnManager spawnManager)
     {
         /*
-         * 이미 검색한 맵이면 씬 계층을 다시 탐색하지 않습니다.
-         * 몬스터 관리자가 없는 맵은 null로 캐싱됩니다.
+         * 이미 검색한 맵이면 씬 계층을
+         * 다시 탐색하지 않습니다.
+         *
+         * 몬스터 관리자가 없는 맵도
+         * null 상태로 캐싱됩니다.
          */
         if (monsterSpawnManagers.TryGetValue(
                 mapId,
@@ -841,8 +734,8 @@ public class MapNetworkManager : NetworkManager
     }
 
     [Server]
-    private void NotifyPlayerEnteredMap(
-    MapId mapId)
+    public void NotifyPlayerEnteredMap(
+        MapId mapId)
     {
         if (TryGetMonsterSpawnManager(
                 mapId,

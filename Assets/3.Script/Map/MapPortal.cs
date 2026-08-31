@@ -9,7 +9,7 @@ public class MapPortal : MonoBehaviour
     private MapId targetMapId;
 
     [SerializeField]
-    private string targetSpawnId = "Default";
+    private string targetSpawnId = "Spawn_FromBattleField1";
 
     public MapId TargetMapId => targetMapId;
     public string TargetSpawnId => targetSpawnId;
