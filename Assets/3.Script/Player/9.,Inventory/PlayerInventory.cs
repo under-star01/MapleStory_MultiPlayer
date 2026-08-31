@@ -26,6 +26,15 @@ public class PlayerInventory : NetworkBehaviour
     private readonly SyncDictionary<ConsumableId, int>
         consumables = new();
 
+    /*
+     * 마지막 DB 저장 이후
+     * 인벤토리 변경 사항이 있는지 나타냅니다.
+     */
+    private bool hasUnsavedChanges;
+
+    public bool HasUnsavedChanges =>
+        hasUnsavedChanges;
+
     private PlayerHealth playerHealth;
 
     private readonly List<Collider2D>
@@ -87,6 +96,186 @@ public class PlayerInventory : NetworkBehaviour
             OnConsumablesChanged;
 
         base.OnStopClient();
+    }
+
+    /// <summary>
+    /// DB에서 조회한 인벤토리 데이터를
+    /// 서버 인벤토리에 적용합니다.
+    ///
+    /// 플레이어를 NetworkServer에 등록하기 전에
+    /// 호출해야 최초 상태가 클라이언트에 동기화됩니다.
+    /// </summary>
+    [Server]
+    public bool ApplyLoadedConsumables(
+        IReadOnlyCollection<PlayerInventoryRecord> records)
+    {
+        if (records == null)
+        {
+            Debug.LogError(
+                "적용할 인벤토리 데이터가 null입니다.",
+                this
+            );
+
+            return false;
+        }
+
+        /*
+         * 기존 인벤토리를 바로 지우지 않고,
+         * 모든 DB 데이터를 먼저 검증합니다.
+         *
+         * 잘못된 행이 하나라도 있다면
+         * 기존 상태를 건드리지 않습니다.
+         */
+        Dictionary<ConsumableId, int>
+            validatedConsumables = new();
+
+        foreach (PlayerInventoryRecord record
+                 in records)
+        {
+            if (record == null)
+            {
+                Debug.LogError(
+                    "DB 인벤토리에 null 데이터가 있습니다.",
+                    this
+                );
+
+                return false;
+            }
+
+            if (!Enum.IsDefined(
+                    typeof(ConsumableId),
+                    record.ItemId))
+            {
+                Debug.LogError(
+                    $"정의되지 않은 소비 아이템입니다: " +
+                    $"ItemId={record.ItemId}",
+                    this
+                );
+
+                return false;
+            }
+
+            ConsumableId consumableId =
+                (ConsumableId)record.ItemId;
+
+            if (consumableId == ConsumableId.None ||
+                record.Quantity <= 0)
+            {
+                Debug.LogError(
+                    $"유효하지 않은 인벤토리 데이터입니다: " +
+                    $"ItemId={record.ItemId}, " +
+                    $"Quantity={record.Quantity}",
+                    this
+                );
+
+                return false;
+            }
+
+            if (!TryGetItemRecord(
+                    consumableId,
+                    out ItemRecord itemRecord))
+            {
+                Debug.LogError(
+                    $"정적 아이템 데이터를 찾지 못했습니다: " +
+                    $"ItemId={record.ItemId}",
+                    this
+                );
+
+                return false;
+            }
+
+            if (record.Quantity >
+                itemRecord.MaxStack)
+            {
+                Debug.LogError(
+                    $"DB 아이템 수량이 최대 보유량을 " +
+                    $"초과했습니다: " +
+                    $"ItemId={record.ItemId}, " +
+                    $"Quantity={record.Quantity}, " +
+                    $"MaxStack={itemRecord.MaxStack}",
+                    this
+                );
+
+                return false;
+            }
+
+            if (!validatedConsumables.TryAdd(
+                    consumableId,
+                    record.Quantity))
+            {
+                Debug.LogError(
+                    $"DB 인벤토리에 중복 아이템이 있습니다: " +
+                    $"ItemId={record.ItemId}",
+                    this
+                );
+
+                return false;
+            }
+        }
+
+        consumables.Clear();
+
+        foreach (var pair in validatedConsumables)
+        {
+            consumables.Add(
+                pair.Key,
+                pair.Value
+            );
+        }
+
+        /*
+         * DB에서 정상적으로 읽어온 직후이므로
+         * 아직 저장할 변경 사항은 없습니다.
+         */
+        hasUnsavedChanges = false;
+
+        Debug.Log(
+            $"[Inventory] DB 인벤토리 적용 완료 / " +
+            $"ItemCount: {consumables.Count}",
+            this
+        );
+
+        return true;
+    }
+
+    /// <summary>
+    /// 현재 서버 인벤토리를
+    /// DB 저장용 데이터로 복사합니다.
+    /// </summary>
+    [Server]
+    public List<PlayerInventoryRecord>
+        CreateSaveSnapshot()
+    {
+        List<PlayerInventoryRecord> records =
+            new(consumables.Count);
+
+        foreach (var pair in consumables)
+        {
+            if (pair.Key == ConsumableId.None ||
+                pair.Value <= 0)
+            {
+                continue;
+            }
+
+            records.Add(
+                new PlayerInventoryRecord(
+                    (int)pair.Key,
+                    pair.Value
+                )
+            );
+        }
+
+        return records;
+    }
+
+    /// <summary>
+    /// 현재 인벤토리가 DB에 정상적으로
+    /// 저장되었음을 기록합니다.
+    /// </summary>
+    [Server]
+    public void MarkSaved()
+    {
+        hasUnsavedChanges = false;
     }
 
     /// <summary>
@@ -167,6 +356,8 @@ public class PlayerInventory : NetworkBehaviour
         consumables[consumableId] =
             newCount;
 
+        MarkInventoryChanged();
+
         return true;
     }
 
@@ -209,6 +400,8 @@ public class PlayerInventory : NetworkBehaviour
             consumables[consumableId] =
                 newCount;
         }
+
+        MarkInventoryChanged();
 
         return true;
     }
@@ -398,5 +591,11 @@ public class PlayerInventory : NetworkBehaviour
             (int)consumableId,
             out record
         );
+    }
+
+    [Server]
+    private void MarkInventoryChanged()
+    {
+        hasUnsavedChanges = true;
     }
 }

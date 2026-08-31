@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Mirror;
 using UnityEngine;
 
-[RequireComponent(typeof(InitialMapEntryController))]
+[RequireComponent(typeof(InitialPlayerEntryController))]
 public class AccountNetworkController : MonoBehaviour
 {
     /*
@@ -37,13 +37,13 @@ public class AccountNetworkController : MonoBehaviour
         <int, NetworkConnectionToClient>
         loggedInConnections = new();
 
-    private InitialMapEntryController
-        initialMapEntryController;
+    private InitialPlayerEntryController
+        initialPlayerEntryController;
 
     private void Awake()
     {
-        initialMapEntryController =
-            GetComponent<InitialMapEntryController>();
+        initialPlayerEntryController =
+            GetComponent<InitialPlayerEntryController>();
     }
 
     /*
@@ -296,7 +296,7 @@ public class AccountNetworkController : MonoBehaviour
             conn
         );
 
-        initialMapEntryController.BeginInitialMapLoad(
+        initialPlayerEntryController.BeginEntry(
             conn,
             loginResult.User
         );
@@ -501,6 +501,83 @@ public class AccountNetworkController : MonoBehaviour
             conn,
             out user
         );
+    }
+
+    /// <summary>
+    /// 로그인한 유저의 마지막 맵과 스폰 지점을
+    /// DB에 저장합니다.
+    /// </summary>
+    [Server]
+    public async void SaveLastLocation(
+        NetworkConnectionToClient conn,
+        MapId mapId,
+        string spawnId)
+    {
+        if (conn == null)
+            return;
+
+        if (!connectedUsers.TryGetValue(
+                conn,
+                out UserRecord user))
+        {
+            Debug.LogWarning(
+                "[Account] 마지막 위치를 저장할 " +
+                "로그인 유저를 찾지 못했습니다.",
+                this
+            );
+
+            return;
+        }
+
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized ||
+            databaseManager.UserRepository == null)
+        {
+            Debug.LogError(
+                "[Account] 마지막 위치를 저장할 " +
+                "DB가 준비되지 않았습니다.",
+                this
+            );
+
+            return;
+        }
+
+        try
+        {
+            await databaseManager
+                .UserRepository
+                .UpdateLastLocationAsync(
+                    user.UserId,
+                    mapId.ToString(),
+                    spawnId
+                );
+
+            Debug.Log(
+                $"[Account] 마지막 위치 저장 완료 / " +
+                $"UserId: {user.UserId}, " +
+                $"Map: {mapId}, " +
+                $"Spawn: {spawnId}",
+                this
+            );
+        }
+        catch (Exception exception)
+        {
+            /*
+             * 이미 맵 이동은 완료된 상태이므로
+             * 저장 실패 때문에 이동을 취소하지 않습니다.
+             */
+            Debug.LogError(
+                $"[Account] 마지막 위치 저장 실패 / " +
+                $"UserId: {user.UserId}, " +
+                $"Map: {mapId}, " +
+                $"Spawn: {spawnId}\n" +
+                $"{exception}",
+                this
+            );
+        }
     }
 
     /// <summary>

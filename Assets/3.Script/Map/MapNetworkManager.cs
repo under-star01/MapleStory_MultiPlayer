@@ -1,12 +1,14 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(MapSceneManager))]
 [RequireComponent(typeof(AccountNetworkController))]
-[RequireComponent(typeof(InitialMapEntryController))]
+[RequireComponent(typeof(InitialPlayerEntryController))]
 public class MapNetworkManager : NetworkManager
 {
     private class PendingMapTransition
@@ -34,7 +36,8 @@ public class MapNetworkManager : NetworkManager
         <NetworkConnectionToClient, PendingMapTransition>
         pendingTransitions = new();
 
-    private readonly Dictionary<MapId, MonsterSpawnManager>
+    private readonly Dictionary
+        <MapId, MonsterSpawnManager>
         monsterSpawnManagers = new();
 
     private MapSceneManager mapSceneManager;
@@ -42,8 +45,8 @@ public class MapNetworkManager : NetworkManager
     private AccountNetworkController
         accountNetworkController;
 
-    private InitialMapEntryController
-        initialMapEntryController;
+    private InitialPlayerEntryController
+        initialPlayerEntryController;
 
     private Coroutine loadMapsCoroutine;
 
@@ -57,8 +60,8 @@ public class MapNetworkManager : NetworkManager
         accountNetworkController =
             GetComponent<AccountNetworkController>();
 
-        initialMapEntryController =
-            GetComponent<InitialMapEntryController>();
+        initialPlayerEntryController =
+            GetComponent<InitialPlayerEntryController>();
     }
 
     public override void OnStartServer()
@@ -66,7 +69,7 @@ public class MapNetworkManager : NetworkManager
         base.OnStartServer();
 
         accountNetworkController.StartServer();
-        initialMapEntryController.StartServer();
+        initialPlayerEntryController.StartServer();
 
         NetworkServer.RegisterHandler
             <TransitionMapLoadedMessage>(
@@ -82,7 +85,7 @@ public class MapNetworkManager : NetworkManager
     public override void OnStopServer()
     {
         accountNetworkController.StopServer();
-        initialMapEntryController.StopServer();
+        initialPlayerEntryController.StopServer();
 
         NetworkServer.UnregisterHandler
             <TransitionMapLoadedMessage>();
@@ -106,7 +109,7 @@ public class MapNetworkManager : NetworkManager
         base.OnStartClient();
 
         accountNetworkController.StartClient();
-        initialMapEntryController.StartClient();
+        initialPlayerEntryController.StartClient();
 
         NetworkClient.RegisterHandler
             <LoadTransitionMapMessage>(
@@ -122,7 +125,7 @@ public class MapNetworkManager : NetworkManager
     public override void OnStopClient()
     {
         accountNetworkController.StopClient();
-        initialMapEntryController.StopClient();
+        initialPlayerEntryController.StopClient();
 
         NetworkClient.UnregisterHandler
             <LoadTransitionMapMessage>();
@@ -148,7 +151,19 @@ public class MapNetworkManager : NetworkManager
     public override void OnServerDisconnect(
         NetworkConnectionToClient conn)
     {
-        initialMapEntryController
+        /*
+         * 플레이어가 제거되기 전에 UserId와
+         * 인벤토리 스냅샷을 확보해 저장을 시작합니다.
+         */
+        if (conn?.identity != null)
+        {
+            _ = SaveInventoryAsync(
+                conn.identity.gameObject,
+                false
+            );
+        }
+
+        initialPlayerEntryController
             .RemoveConnection(conn);
 
         accountNetworkController
@@ -156,8 +171,7 @@ public class MapNetworkManager : NetworkManager
 
         pendingTransitions.Remove(conn);
 
-        if (conn != null &&
-            conn.identity != null)
+        if (conn?.identity != null)
         {
             PlayerMapController mapController =
                 conn.identity.GetComponent
@@ -192,11 +206,6 @@ public class MapNetworkManager : NetworkManager
             yield break;
         }
 
-        /*
-         * 이 메서드는 OnStartServer에서 실행되므로,
-         * 실제 Mirror 서버가 시작된 경우에만
-         * DB 초기화를 요청합니다.
-         */
         databaseManager.BeginInitialization();
 
         yield return new WaitUntil(
@@ -259,15 +268,10 @@ public class MapNetworkManager : NetworkManager
         }
 
         /*
-         * 전환 시작과 동시에
-         * 모든 플레이어 입력을 차단합니다.
+         * 맵 전환이 시작되면 플레이어 입력을 차단합니다.
          */
         inputReader.SetInputBlocked(true);
 
-        /*
-         * 화면이 완전히 검게 된 다음
-         * 목적지 맵을 로드합니다.
-         */
         yield return mapTransitionUI.FadeOut();
 
         yield return
@@ -277,10 +281,6 @@ public class MapNetworkManager : NetworkManager
                 mapId,
                 out string sceneName))
         {
-            /*
-             * 로드에 실패하면 기존 화면으로 돌아가고
-             * 입력을 복구합니다.
-             */
             yield return mapTransitionUI.FadeIn();
 
             inputReader.SetInputBlocked(false);
@@ -371,7 +371,7 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
-    private void OnServerTransitionMapLoaded(
+    private async void OnServerTransitionMapLoaded(
         NetworkConnectionToClient conn,
         TransitionMapLoadedMessage message)
     {
@@ -473,8 +473,8 @@ public class MapNetworkManager : NetworkManager
         );
 
         /*
-         * 목적지의 독립 PhysicsScene2D로
-         * 플레이어를 이동합니다.
+         * 플레이어를 목적지의 독립 PhysicsScene2D로
+         * 이동하고 현재 맵 정보를 변경합니다.
          */
         SceneManager.MoveGameObjectToScene(
             player,
@@ -494,9 +494,35 @@ public class MapNetworkManager : NetworkManager
         );
 
         /*
-         * 마을의 부활 위치로 이동한 경우
-         * 사망 상태와 체력을 복구합니다.
+         * 입력이 차단된 맵 전환 구간에서
+         * 변경된 인벤토리를 저장합니다.
          */
+        await SaveInventoryAsync(
+            player,
+            true
+        );
+
+        /*
+         * 저장을 기다리는 동안 연결이 종료될 수 있으므로
+         * 이후 네트워크 처리를 진행하기 전에 확인합니다.
+         */
+        if (!IsConnectionActive(conn) ||
+            conn.identity == null)
+        {
+            pendingTransitions.Remove(conn);
+            return;
+        }
+
+        /*
+         * 서버 맵 이동이 정상 반영된 뒤
+         * 마지막 위치를 DB에 저장합니다.
+         */
+        accountNetworkController.SaveLastLocation(
+            conn,
+            transition.TargetMapId,
+            transition.TargetSpawnId
+        );
+
         if (playerHealth.IsDead &&
             transition.TargetMapId == MapId.MainTown)
         {
@@ -505,7 +531,7 @@ public class MapNetworkManager : NetworkManager
 
         /*
          * Scene Interest Management가 변경된
-         * 플레이어의 Scene을 다시 반영합니다.
+         * 플레이어 씬을 다시 반영합니다.
          */
         NetworkServer.RebuildObservers(
             conn.identity,
@@ -627,6 +653,104 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    /// <summary>
+    /// 변경된 플레이어 인벤토리를 DB에 저장합니다.
+    /// </summary>
+    private async Task SaveInventoryAsync(
+        GameObject player,
+        bool markSaved)
+    {
+        if (player == null)
+            return;
+
+        PlayerAccountData accountData =
+            player.GetComponent<PlayerAccountData>();
+
+        PlayerInventory inventory =
+            player.GetComponent<PlayerInventory>();
+
+        if (accountData == null ||
+            inventory == null)
+        {
+            Debug.LogError(
+                "[Inventory] 저장에 필요한 플레이어 " +
+                "컴포넌트를 찾지 못했습니다.",
+                player
+            );
+
+            return;
+        }
+
+        if (!inventory.HasUnsavedChanges)
+            return;
+
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized ||
+            databaseManager.PlayerInventoryRepository == null)
+        {
+            Debug.LogError(
+                "[Inventory] 저장할 DB가 " +
+                "준비되지 않았습니다.",
+                this
+            );
+
+            return;
+        }
+
+        /*
+         * 비동기 대기 전에 필요한 데이터를 복사합니다.
+         * 연결 종료로 플레이어가 제거되어도
+         * DB 저장에 필요한 값은 유지됩니다.
+         */
+        int userId =
+            accountData.UserId;
+
+        List<PlayerInventoryRecord> records =
+            inventory.CreateSaveSnapshot();
+
+        try
+        {
+            await databaseManager
+                .PlayerInventoryRepository
+                .SaveAllAsync(
+                    userId,
+                    records
+                );
+
+            /*
+             * 맵 이동 중에는 플레이어가 유지되므로
+             * 저장 성공 상태를 반영합니다.
+             *
+             * 연결 종료 시에는 제거될 오브젝트에
+             * 다시 접근하지 않습니다.
+             */
+            if (markSaved &&
+                inventory != null)
+            {
+                inventory.MarkSaved();
+            }
+
+            Debug.Log(
+                $"[Inventory] 저장 완료 / " +
+                $"UserId: {userId}, " +
+                $"ItemCount: {records.Count}",
+                this
+            );
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                $"[Inventory] 저장 실패 / " +
+                $"UserId: {userId}\n" +
+                $"{exception}",
+                this
+            );
+        }
+    }
+
     private bool TryGetLocalInputReader(
         out PlayerInputReader inputReader)
     {
@@ -683,10 +807,9 @@ public class MapNetworkManager : NetworkManager
             return false;
         }
 
-        Scene scene =
-            SceneManager.GetSceneByName(sceneName);
-
-        return scene.isLoaded;
+        return SceneManager
+            .GetSceneByName(sceneName)
+            .isLoaded;
     }
 
     private bool TryGetMonsterSpawnManager(
@@ -697,8 +820,7 @@ public class MapNetworkManager : NetworkManager
          * 이미 검색한 맵이면 씬 계층을
          * 다시 탐색하지 않습니다.
          *
-         * 몬스터 관리자가 없는 맵도
-         * null 상태로 캐싱됩니다.
+         * 관리자가 없는 맵도 null 상태로 캐싱됩니다.
          */
         if (monsterSpawnManagers.TryGetValue(
                 mapId,
@@ -755,5 +877,16 @@ public class MapNetworkManager : NetworkManager
         {
             spawnManager.OnPlayerExitedMap();
         }
+    }
+
+    private static bool IsConnectionActive(
+        NetworkConnectionToClient conn)
+    {
+        return conn != null &&
+               NetworkServer.connections.TryGetValue(
+                   conn.connectionId,
+                   out NetworkConnectionToClient
+                       activeConnection) &&
+               activeConnection == conn;
     }
 }

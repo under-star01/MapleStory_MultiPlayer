@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Mirror;
@@ -6,15 +7,15 @@ using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(MapNetworkManager))]
 [RequireComponent(typeof(MapSceneManager))]
-public class InitialMapEntryController : MonoBehaviour
+public class InitialPlayerEntryController : MonoBehaviour
 {
-    private class PendingInitialSpawn
+    private class PendingPlayerEntry
     {
         public UserRecord User { get; }
         public MapId MapId { get; }
         public string SpawnId { get; }
 
-        public PendingInitialSpawn(
+        public PendingPlayerEntry(
             UserRecord user,
             MapId mapId,
             string spawnId)
@@ -30,22 +31,22 @@ public class InitialMapEntryController : MonoBehaviour
 
     [Header("Default Entry Location")]
     [SerializeField]
-    private MapId defaultMapId = MapId.MainTown;
+    private MapId defaultMapId =
+        MapId.MainTown;
 
     /*
-     * 서버가 최초 입장을 요청한 연결과
-     * 최종 결정된 맵·스폰 정보를 보관합니다.
-     */
-    private readonly Dictionary
-        <NetworkConnectionToClient, PendingInitialSpawn>
-        pendingInitialSpawns = new();
-
-    /*
-     * 서버 맵 로드를 기다리는 동안
-     * 동일 연결이 입장을 중복 요청하지 못하게 합니다.
+     * 서버 맵 준비를 기다리는 연결입니다.
      */
     private readonly HashSet<NetworkConnectionToClient>
         preparingConnections = new();
+
+    /*
+     * 최초 입장 위치가 결정된 뒤
+     * 클라이언트의 맵 로드 완료를 기다리는 연결입니다.
+     */
+    private readonly Dictionary
+        <NetworkConnectionToClient, PendingPlayerEntry>
+        pendingEntries = new();
 
     private MapNetworkManager mapNetworkManager;
     private MapSceneManager mapSceneManager;
@@ -68,11 +69,11 @@ public class InitialMapEntryController : MonoBehaviour
             OnServerMapLoaded
         );
 
-        pendingInitialSpawns.Clear();
         preparingConnections.Clear();
+        pendingEntries.Clear();
 
         Debug.Log(
-            "[InitialEntry] 서버 메시지 등록 완료",
+            "[InitialPlayerEntry] 서버 메시지 등록 완료",
             this
         );
     }
@@ -85,8 +86,8 @@ public class InitialMapEntryController : MonoBehaviour
         NetworkServer.UnregisterHandler
             <MapLoadedMessage>();
 
-        pendingInitialSpawns.Clear();
         preparingConnections.Clear();
+        pendingEntries.Clear();
     }
 
     /*
@@ -99,7 +100,7 @@ public class InitialMapEntryController : MonoBehaviour
         );
 
         Debug.Log(
-            "[InitialEntry] 클라이언트 메시지 등록 완료",
+            "[InitialPlayerEntry] 클라이언트 메시지 등록 완료",
             this
         );
     }
@@ -114,11 +115,10 @@ public class InitialMapEntryController : MonoBehaviour
     }
 
     /// <summary>
-    /// 로그인에 성공한 유저의 최초 맵 입장을 시작합니다.
-    /// 서버에서만 호출합니다.
+    /// 로그인한 유저의 최초 플레이어 입장을 시작합니다.
     /// </summary>
     [Server]
-    public void BeginInitialMapLoad(
+    public void BeginEntry(
         NetworkConnectionToClient conn,
         UserRecord user)
     {
@@ -131,7 +131,7 @@ public class InitialMapEntryController : MonoBehaviour
         if (conn.identity != null)
         {
             Debug.LogWarning(
-                "[InitialEntry] 이미 플레이어가 " +
+                "[InitialPlayerEntry] 이미 플레이어가 " +
                 "생성된 연결입니다.",
                 conn.identity
             );
@@ -140,10 +140,10 @@ public class InitialMapEntryController : MonoBehaviour
         }
 
         if (preparingConnections.Contains(conn) ||
-            pendingInitialSpawns.ContainsKey(conn))
+            pendingEntries.ContainsKey(conn))
         {
             Debug.LogWarning(
-                "[InitialEntry] 이미 최초 입장을 " +
+                "[InitialPlayerEntry] 이미 최초 입장을 " +
                 "처리하고 있습니다.",
                 this
             );
@@ -154,7 +154,7 @@ public class InitialMapEntryController : MonoBehaviour
         preparingConnections.Add(conn);
 
         StartCoroutine(
-            PrepareInitialMapLoad(
+            PrepareEntry(
                 conn,
                 user
             )
@@ -168,19 +168,15 @@ public class InitialMapEntryController : MonoBehaviour
     public void RemoveConnection(
         NetworkConnectionToClient conn)
     {
-        if (conn == null)
-            return;
-
-        preparingConnections.Remove(conn);
-        pendingInitialSpawns.Remove(conn);
+        CancelEntry(conn);
     }
 
-    private IEnumerator PrepareInitialMapLoad(
+    private IEnumerator PrepareEntry(
         NetworkConnectionToClient conn,
         UserRecord user)
     {
         /*
-         * 로그인 처리가 서버 맵 로드보다 먼저 끝날 수 있으므로,
+         * 로그인이 서버 맵 초기화보다 먼저 끝날 수 있으므로
          * 모든 서버 맵이 준비될 때까지 기다립니다.
          */
         yield return new WaitUntil(
@@ -192,30 +188,34 @@ public class InitialMapEntryController : MonoBehaviour
         if (!IsConnectionActive(conn))
             yield break;
 
-        ResolveInitialLocation(
+        ResolveEntryLocation(
             user,
             out MapId targetMapId,
             out string targetSpawnId
         );
 
+        /*
+         * 저장 위치가 잘못된 경우 기본 위치로 교체되지만,
+         * 기본 위치 자체도 잘못 설정됐을 가능성을 검사합니다.
+         */
         if (!IsValidLocation(
                 targetMapId,
                 targetSpawnId))
         {
             Debug.LogError(
-                $"[InitialEntry] 기본 입장 위치도 " +
+                $"[InitialPlayerEntry] 기본 입장 위치가 " +
                 $"유효하지 않습니다: " +
                 $"{targetMapId} / {targetSpawnId}",
                 this
             );
 
-            conn.Disconnect();
+            CancelEntry(conn, true);
             yield break;
         }
 
-        pendingInitialSpawns.Add(
+        pendingEntries.Add(
             conn,
-            new PendingInitialSpawn(
+            new PendingPlayerEntry(
                 user,
                 targetMapId,
                 targetSpawnId
@@ -230,7 +230,7 @@ public class InitialMapEntryController : MonoBehaviour
         );
 
         Debug.Log(
-            $"[InitialEntry] 최초 맵 로드 요청 / " +
+            $"[InitialPlayerEntry] 최초 맵 로드 요청 / " +
             $"UserId: {user.UserId}, " +
             $"Map: {targetMapId}, " +
             $"Spawn: {targetSpawnId}",
@@ -239,10 +239,10 @@ public class InitialMapEntryController : MonoBehaviour
     }
 
     /// <summary>
-    /// DB에 저장된 위치를 검사하고
-    /// 실제 최초 입장 위치를 결정합니다.
+    /// DB에 저장된 마지막 위치를 검사하고
+    /// 최초 입장 위치를 결정합니다.
     /// </summary>
-    private void ResolveInitialLocation(
+    private void ResolveEntryLocation(
         UserRecord user,
         out MapId targetMapId,
         out string targetSpawnId)
@@ -250,33 +250,17 @@ public class InitialMapEntryController : MonoBehaviour
         targetMapId = defaultMapId;
         targetSpawnId = DefaultSpawnId;
 
-        bool hasValidMapId =
-            System.Enum.TryParse(
+        if (!Enum.TryParse(
                 user.LastMapId,
-                out MapId savedMapId
-            );
-
-        if (!hasValidMapId)
-        {
-            Debug.LogWarning(
-                $"[InitialEntry] 저장된 MapId를 " +
-                $"변환하지 못해 기본 위치를 사용합니다: " +
-                $"{user.LastMapId}",
-                this
-            );
-
-            return;
-        }
-
-        if (!IsValidLocation(
+                out MapId savedMapId) ||
+            !IsValidLocation(
                 savedMapId,
                 user.LastSpawnId))
         {
             Debug.LogWarning(
-                $"[InitialEntry] 저장된 위치를 " +
-                $"찾지 못해 기본 위치를 사용합니다: " +
-                $"{user.LastMapId} / " +
-                $"{user.LastSpawnId}",
+                $"[InitialPlayerEntry] 저장 위치가 " +
+                $"유효하지 않아 기본 위치를 사용합니다: " +
+                $"{user.LastMapId} / {user.LastSpawnId}",
                 this
             );
 
@@ -291,22 +275,18 @@ public class InitialMapEntryController : MonoBehaviour
         MapId mapId,
         string spawnId)
     {
-        if (!mapSceneManager.TryGetLoadedScene(
-                mapId,
-                out _))
-        {
-            return false;
-        }
-
-        return mapSceneManager.FindSpawnPoint(
+        return mapSceneManager.TryGetLoadedScene(
+                   mapId,
+                   out _) &&
+               mapSceneManager.FindSpawnPoint(
                    mapId,
                    spawnId
                ) != null;
     }
 
     /*
-     * 서버로부터 최초 맵 로드 요청을 받은 클라이언트가
-     * 해당 맵을 로드합니다.
+     * 서버의 최초 맵 로드 요청을 받은 클라이언트가
+     * 자신의 입장 맵을 로드합니다.
      */
     private void OnClientLoadMap(
         LoadMapMessage message)
@@ -329,7 +309,7 @@ public class InitialMapEntryController : MonoBehaviour
                 out string sceneName))
         {
             Debug.LogError(
-                $"[InitialEntry] 클라이언트 맵을 " +
+                $"[InitialPlayerEntry] 클라이언트 맵을 " +
                 $"정상적으로 로드하지 못했습니다: {mapId}",
                 this
             );
@@ -345,26 +325,26 @@ public class InitialMapEntryController : MonoBehaviour
         );
 
         Debug.Log(
-            $"[InitialEntry] 클라이언트 맵 로드 완료: " +
-            $"{mapId} / {sceneName}",
+            $"[InitialPlayerEntry] 클라이언트 맵 로드 완료 / " +
+            $"Map: {mapId}, Scene: {sceneName}",
             this
         );
     }
 
     /*
-     * 클라이언트가 최초 맵을 모두 로드한 뒤
-     * 서버에 전달하는 완료 응답입니다.
+     * 클라이언트의 최초 맵 로드가 완료되면
+     * 유저 인벤토리를 불러오고 플레이어를 생성합니다.
      */
-    private void OnServerMapLoaded(
+    private async void OnServerMapLoaded(
         NetworkConnectionToClient conn,
         MapLoadedMessage message)
     {
-        if (!pendingInitialSpawns.TryGetValue(
+        if (!pendingEntries.TryGetValue(
                 conn,
-                out PendingInitialSpawn pendingSpawn))
+                out PendingPlayerEntry pendingEntry))
         {
             Debug.LogWarning(
-                "[InitialEntry] 서버가 요청하지 않은 " +
+                "[InitialPlayerEntry] 요청하지 않은 " +
                 "최초 맵 로드 응답입니다.",
                 this
             );
@@ -372,82 +352,136 @@ public class InitialMapEntryController : MonoBehaviour
             return;
         }
 
-        if (pendingSpawn.MapId != message.MapId)
+        if (pendingEntry.MapId != message.MapId)
         {
             Debug.LogWarning(
-                $"[InitialEntry] 맵 정보가 일치하지 않습니다: " +
-                $"Server={pendingSpawn.MapId}, " +
+                $"[InitialPlayerEntry] 맵 정보가 " +
+                $"일치하지 않습니다: " +
+                $"Server={pendingEntry.MapId}, " +
                 $"Client={message.MapId}",
                 this
             );
 
-            pendingInitialSpawns.Remove(conn);
-            conn.Disconnect();
+            CancelEntry(conn, true);
             return;
         }
 
         if (conn.identity != null)
         {
             Debug.LogWarning(
-                "[InitialEntry] 해당 연결에는 이미 " +
+                "[InitialPlayerEntry] 해당 연결에는 이미 " +
                 "플레이어가 존재합니다.",
                 conn.identity
             );
 
-            pendingInitialSpawns.Remove(conn);
+            CancelEntry(conn);
             return;
         }
 
         if (!mapSceneManager.TryGetLoadedScene(
-                pendingSpawn.MapId,
+                pendingEntry.MapId,
                 out Scene targetScene))
         {
             Debug.LogError(
-                $"[InitialEntry] 서버 맵 씬을 " +
-                $"찾지 못했습니다: {pendingSpawn.MapId}",
+                $"[InitialPlayerEntry] 서버 맵 씬을 " +
+                $"찾지 못했습니다: {pendingEntry.MapId}",
                 this
             );
 
-            pendingInitialSpawns.Remove(conn);
+            CancelEntry(conn, true);
             return;
         }
 
         Transform spawnPoint =
             mapSceneManager.FindSpawnPoint(
-                pendingSpawn.MapId,
-                pendingSpawn.SpawnId
+                pendingEntry.MapId,
+                pendingEntry.SpawnId
             );
 
         if (spawnPoint == null)
         {
             Debug.LogError(
-                $"[InitialEntry] 스폰 지점을 " +
+                $"[InitialPlayerEntry] 스폰 지점을 " +
                 $"찾지 못했습니다: " +
-                $"{pendingSpawn.MapId} / " +
-                $"{pendingSpawn.SpawnId}",
+                $"{pendingEntry.MapId} / " +
+                $"{pendingEntry.SpawnId}",
                 this
             );
 
-            pendingInitialSpawns.Remove(conn);
+            CancelEntry(conn, true);
             return;
         }
 
-        CreatePlayer(
-            conn,
-            pendingSpawn,
-            targetScene,
-            spawnPoint
-        );
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
 
-        pendingInitialSpawns.Remove(conn);
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized ||
+            databaseManager.PlayerInventoryRepository == null)
+        {
+            Debug.LogError(
+                "[InitialPlayerEntry] 인벤토리 Repository가 " +
+                "준비되지 않았습니다.",
+                this
+            );
+
+            CancelEntry(conn, true);
+            return;
+        }
+
+        try
+        {
+            List<PlayerInventoryRecord> inventoryRecords =
+                await databaseManager
+                    .PlayerInventoryRepository
+                    .LoadByUserIdAsync(
+                        pendingEntry.User.UserId
+                    );
+
+            /*
+             * DB 조회 중 연결이 종료되었을 수 있으므로
+             * 플레이어 생성 전에 다시 검사합니다.
+             */
+            if (!IsConnectionActive(conn))
+            {
+                CancelEntry(conn);
+                return;
+            }
+
+            if (!TryCreatePlayer(
+                    conn,
+                    pendingEntry,
+                    targetScene,
+                    spawnPoint,
+                    inventoryRecords))
+            {
+                CancelEntry(conn, true);
+                return;
+            }
+
+            CancelEntry(conn);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                $"[InitialPlayerEntry] 인벤토리 로드 실패 / " +
+                $"UserId: {pendingEntry.User.UserId}\n" +
+                $"{exception}",
+                this
+            );
+
+            CancelEntry(conn, true);
+        }
     }
 
     [Server]
-    private void CreatePlayer(
+    private bool TryCreatePlayer(
         NetworkConnectionToClient conn,
-        PendingInitialSpawn pendingSpawn,
+        PendingPlayerEntry pendingEntry,
         Scene targetScene,
-        Transform spawnPoint)
+        Transform spawnPoint,
+        IReadOnlyCollection<PlayerInventoryRecord>
+            inventoryRecords)
     {
         GameObject player =
             Instantiate(
@@ -462,30 +496,48 @@ public class InitialMapEntryController : MonoBehaviour
         PlayerAccountData accountData =
             player.GetComponent<PlayerAccountData>();
 
-        if (mapController == null || accountData == null)
+        PlayerInventory inventory =
+            player.GetComponent<PlayerInventory>();
+
+        if (mapController == null ||
+            accountData == null ||
+            inventory == null)
         {
             Debug.LogError(
-                "플레이어 최초 생성에 필요한 " +
+                "[InitialPlayerEntry] 플레이어 생성에 필요한 " +
                 "컴포넌트를 찾지 못했습니다.",
                 player
             );
 
             Destroy(player);
-            return;
+            return false;
         }
 
         accountData.Initialize(
-            pendingSpawn.User.UserId,
-            pendingSpawn.User.Nickname
+            pendingEntry.User.UserId,
+            pendingEntry.User.Nickname
         );
 
+        if (!inventory.ApplyLoadedConsumables(
+                inventoryRecords))
+        {
+            Debug.LogError(
+                $"[InitialPlayerEntry] 인벤토리 적용 실패 / " +
+                $"UserId: {pendingEntry.User.UserId}",
+                player
+            );
+
+            Destroy(player);
+            return false;
+        }
+
         mapController.SetCurrentMap(
-            pendingSpawn.MapId
+            pendingEntry.MapId
         );
 
         /*
          * 플레이어를 목적지 맵의 독립 PhysicsScene2D에
-         * 포함시키기 위해 서버 씬으로 이동합니다.
+         * 포함시키기 위해 서버 맵 씬으로 이동합니다.
          */
         SceneManager.MoveGameObjectToScene(
             player,
@@ -497,24 +549,42 @@ public class InitialMapEntryController : MonoBehaviour
             player
         );
 
-        /*
-         * 맵 인원 증가와 몬스터 활성화 처리는
-         * 기존 MapNetworkManager에 알립니다.
-         *
-         * 다음 단계에서 이 메서드를 public으로 변경합니다.
-         */
         mapNetworkManager.NotifyPlayerEnteredMap(
-            pendingSpawn.MapId
+            pendingEntry.MapId
         );
 
         Debug.Log(
-            $"[InitialEntry] 플레이어 최초 생성 완료 / " +
-            $"UserId: {pendingSpawn.User.UserId}, " +
-            $"Map: {pendingSpawn.MapId}, " +
-            $"Spawn: {pendingSpawn.SpawnId}, " +
+            $"[InitialPlayerEntry] 플레이어 최초 생성 완료 / " +
+            $"UserId: {pendingEntry.User.UserId}, " +
+            $"Map: {pendingEntry.MapId}, " +
+            $"Spawn: {pendingEntry.SpawnId}, " +
             $"Position: {spawnPoint.position}",
             player
         );
+
+        return true;
+    }
+
+    /// <summary>
+    /// 진행 중인 최초 입장 정보를 제거하고,
+    /// 필요하면 해당 연결을 종료합니다.
+    /// </summary>
+    [Server]
+    private void CancelEntry(
+        NetworkConnectionToClient conn,
+        bool disconnect = false)
+    {
+        if (conn == null)
+            return;
+
+        preparingConnections.Remove(conn);
+        pendingEntries.Remove(conn);
+
+        if (disconnect &&
+            IsConnectionActive(conn))
+        {
+            conn.Disconnect();
+        }
     }
 
     private bool IsClientMapLoaded(
@@ -528,10 +598,9 @@ public class InitialMapEntryController : MonoBehaviour
             return false;
         }
 
-        Scene scene =
-            SceneManager.GetSceneByName(sceneName);
-
-        return scene.isLoaded;
+        return SceneManager
+            .GetSceneByName(sceneName)
+            .isLoaded;
     }
 
     private static bool IsConnectionActive(
