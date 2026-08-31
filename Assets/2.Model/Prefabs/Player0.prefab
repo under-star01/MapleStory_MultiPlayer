@@ -25,6 +25,7 @@ GameObject:
   - component: {fileID: 3441251927779019087}
   - component: {fileID: 2507989530519979272}
   - component: {fileID: 4756462774277225064}
+  - component: {fileID: 577061480059792288}
   - component: {fileID: 549856490600395042}
   - component: {fileID: 6081832958655312243}
   - component: {fileID: 251517183009848918}
@@ -508,6 +509,22 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   consumableDatabase: {fileID: 11400000, guid: 5da7c28d8e329504f9ae4d7dca1e5f84, type: 2}
+--- !u!114 &577061480059792288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77cb1e98ac887084faa9ae9c37aac88d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAccountData
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  nicknameText: {fileID: 2241273226411468847}
 --- !u!114 &549856490600395042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -668,8 +685,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
-  m_fontSizeBase: 12
+  m_fontSize: 15
+  m_fontSizeBase: 15
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -771,7 +788,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 390
+  m_SortingOrder: 450
   m_TargetDisplay: 0
 --- !u!114 &6274199937214797891
 MonoBehaviour:

@@ -459,17 +459,25 @@ public class InitialMapEntryController : MonoBehaviour
         PlayerMapController mapController =
             player.GetComponent<PlayerMapController>();
 
-        if (mapController == null)
+        PlayerAccountData accountData =
+            player.GetComponent<PlayerAccountData>();
+
+        if (mapController == null || accountData == null)
         {
             Debug.LogError(
-                $"{nameof(PlayerMapController)}가 " +
-                "Player Prefab에 없습니다.",
+                "플레이어 최초 생성에 필요한 " +
+                "컴포넌트를 찾지 못했습니다.",
                 player
             );
 
             Destroy(player);
             return;
         }
+
+        accountData.Initialize(
+            pendingSpawn.User.UserId,
+            pendingSpawn.User.Nickname
+        );
 
         mapController.SetCurrentMap(
             pendingSpawn.MapId
