@@ -56,6 +56,15 @@ public class PlayerAccountData : NetworkBehaviour
         );
     }
 
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+
+        AudioManager.Instance?.PlayBgm(
+            BgmSoundId.InGame
+        );
+    }
+
     private void OnNicknameChanged(
         string oldNickname,
         string newNickname)

@@ -98,6 +98,7 @@ public class BasicAttackSkill : AttackSkillBase
          * 애니메이션 이벤트가 중복 호출되더라도
          * 한 번의 일반 공격에서는 한 번만 판정합니다.
          */
+
         hasAppliedHit = true;
 
         ApplyAreaDamage(
