@@ -243,7 +243,8 @@ public class DefaultActionPaletteUI : MonoBehaviour
 
                 binding =
                     QuickSlotBinding.FromSkill(
-                        entry.skillId
+                        entry.skillId,
+                        QuickSlotBindingSource.DefaultActionPalette
                     );
 
                 return true;
@@ -288,7 +289,8 @@ public class DefaultActionPaletteUI : MonoBehaviour
             case QuickSlotBindingType.Skill:
                 return quickSlotController.BindSkill(
                     key,
-                    binding.SkillId
+                    binding.SkillId,
+                    binding.Source
                 );
 
             case QuickSlotBindingType.BasicAction:
@@ -480,5 +482,39 @@ public class DefaultActionPaletteUI : MonoBehaviour
                 )
             );
         }
+    }
+
+    public bool TryGetBasicActionData(
+    BasicActionId actionId,
+    out BasicActionData actionData)
+    {
+        actionData = null;
+
+        foreach (DefaultActionEntry entry
+                 in defaultActions)
+        {
+            if (entry == null ||
+                entry.type !=
+                    QuickSlotBindingType.BasicAction ||
+                entry.basicActionId != actionId ||
+                entry.icon == null ||
+                !commands.TryGetValue(
+                    actionId,
+                    out IQuickSlotCommand command))
+            {
+                continue;
+            }
+
+            actionData =
+                new BasicActionData(
+                    actionId,
+                    entry.icon,
+                    command
+                );
+
+            return true;
+        }
+
+        return false;
     }
 }

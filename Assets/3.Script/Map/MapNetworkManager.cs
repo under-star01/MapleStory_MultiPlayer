@@ -26,27 +26,19 @@ public class MapNetworkManager : NetworkManager
     }
 
     [Header("Map Transition")]
-    [SerializeField]
-    private MapTransitionUI mapTransitionUI;
-
-    [SerializeField]
-    private float cameraSettleDelay = 0.5f;
+    [SerializeField] private MapTransitionUI mapTransitionUI;
+    [SerializeField] private float cameraSettleDelay = 0.5f;
 
     private readonly Dictionary
         <NetworkConnectionToClient, PendingMapTransition>
         pendingTransitions = new();
 
-    private readonly Dictionary
-        <MapId, MonsterSpawnManager>
+    private readonly Dictionary<MapId, MonsterSpawnManager>
         monsterSpawnManagers = new();
 
     private MapSceneManager mapSceneManager;
-
-    private AccountNetworkController
-        accountNetworkController;
-
-    private InitialPlayerEntryController
-        initialPlayerEntryController;
+    private AccountNetworkController accountNetworkController;
+    private InitialPlayerEntryController initialPlayerEntryController;
 
     private Coroutine loadMapsCoroutine;
 
@@ -77,9 +69,7 @@ public class MapNetworkManager : NetworkManager
             );
 
         loadMapsCoroutine =
-            StartCoroutine(
-                InitializeServerMaps()
-            );
+            StartCoroutine(InitializeServerMaps());
     }
 
     public override void OnStopServer()
@@ -142,8 +132,7 @@ public class MapNetworkManager : NetworkManager
         base.OnServerConnect(conn);
 
         Debug.Log(
-            "[Server] 클라이언트 연결 완료 / " +
-            "로그인 요청 대기",
+            "[Server] 클라이언트 연결 완료 / 로그인 요청 대기",
             this
         );
     }
@@ -152,30 +141,26 @@ public class MapNetworkManager : NetworkManager
         NetworkConnectionToClient conn)
     {
         /*
-         * 플레이어가 제거되기 전에 UserId와
-         * 인벤토리 스냅샷을 확보해 저장을 시작합니다.
+         * 플레이어가 제거되기 전에 저장에 필요한
+         * UserId와 스냅샷을 확보합니다.
          */
         if (conn?.identity != null)
         {
-            _ = SaveInventoryAsync(
-                conn.identity.gameObject,
-                false
-            );
+            GameObject player =
+                conn.identity.gameObject;
+
+            _ = SaveInventoryAsync(player, false);
+            _ = SaveQuickSlotsAsync(player, false);
         }
 
-        initialPlayerEntryController
-            .RemoveConnection(conn);
-
-        accountNetworkController
-            .RemoveConnection(conn);
-
+        initialPlayerEntryController.RemoveConnection(conn);
+        accountNetworkController.RemoveConnection(conn);
         pendingTransitions.Remove(conn);
 
         if (conn?.identity != null)
         {
             PlayerMapController mapController =
-                conn.identity.GetComponent
-                    <PlayerMapController>();
+                conn.identity.GetComponent<PlayerMapController>();
 
             if (mapController != null)
             {
@@ -196,8 +181,7 @@ public class MapNetworkManager : NetworkManager
         if (databaseManager == null)
         {
             Debug.LogError(
-                $"{nameof(DatabaseManager)}를 " +
-                "찾지 못했습니다.",
+                $"{nameof(DatabaseManager)}를 찾지 못했습니다.",
                 this
             );
 
@@ -209,15 +193,13 @@ public class MapNetworkManager : NetworkManager
         databaseManager.BeginInitialization();
 
         yield return new WaitUntil(
-            () => databaseManager
-                .IsInitializationComplete
+            () => databaseManager.IsInitializationComplete
         );
 
         if (!databaseManager.IsInitialized)
         {
             Debug.LogError(
-                "DB 초기화에 실패하여 " +
-                "서버 맵 로드를 중단합니다.",
+                "DB 초기화에 실패하여 서버 맵 로드를 중단합니다.",
                 this
             );
 
@@ -226,8 +208,7 @@ public class MapNetworkManager : NetworkManager
             yield break;
         }
 
-        yield return
-            mapSceneManager.LoadAllServerMaps();
+        yield return mapSceneManager.LoadAllServerMaps();
 
         loadMapsCoroutine = null;
 
@@ -241,9 +222,7 @@ public class MapNetworkManager : NetworkManager
         LoadTransitionMapMessage message)
     {
         StartCoroutine(
-            BeginClientMapTransition(
-                message.MapId
-            )
+            BeginClientMapTransition(message.MapId)
         );
     }
 
@@ -259,23 +238,18 @@ public class MapNetworkManager : NetworkManager
         if (mapTransitionUI == null)
         {
             Debug.LogError(
-                $"{nameof(MapTransitionUI)}가 " +
-                "연결되지 않았습니다.",
+                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
                 this
             );
 
             yield break;
         }
 
-        /*
-         * 맵 전환이 시작되면 플레이어 입력을 차단합니다.
-         */
+        // 맵 전환 동안 플레이어 입력을 차단합니다.
         inputReader.SetInputBlocked(true);
 
         yield return mapTransitionUI.FadeOut();
-
-        yield return
-            mapSceneManager.LoadClientMap(mapId);
+        yield return mapSceneManager.LoadClientMap(mapId);
 
         if (!IsClientMapLoaded(
                 mapId,
@@ -307,11 +281,8 @@ public class MapNetworkManager : NetworkManager
         MapId targetMapId,
         string targetSpawnId)
     {
-        if (conn == null ||
-            conn.identity == null)
-        {
+        if (conn?.identity == null)
             return;
-        }
 
         if (pendingTransitions.ContainsKey(conn))
         {
@@ -328,8 +299,7 @@ public class MapNetworkManager : NetworkManager
                 out _))
         {
             Debug.LogError(
-                $"목적지 맵을 찾지 못했습니다: " +
-                $"{targetMapId}",
+                $"목적지 맵을 찾지 못했습니다: {targetMapId}",
                 this
             );
 
@@ -391,8 +361,7 @@ public class MapNetworkManager : NetworkManager
         {
             Debug.LogWarning(
                 $"맵 전환 정보가 일치하지 않습니다: " +
-                $"{transition.TargetMapId} / " +
-                $"{message.MapId}",
+                $"{transition.TargetMapId} / {message.MapId}",
                 conn?.identity
             );
 
@@ -456,8 +425,8 @@ public class MapNetworkManager : NetworkManager
             playerHealth == null)
         {
             Debug.LogError(
-                "플레이어의 맵 이동 또는 " +
-                "체력 컴포넌트를 찾지 못했습니다.",
+                "플레이어의 맵 이동 또는 체력 " +
+                "컴포넌트를 찾지 못했습니다.",
                 player
             );
 
@@ -468,13 +437,11 @@ public class MapNetworkManager : NetworkManager
         MapId previousMapId =
             mapController.CurrentMapId;
 
-        NotifyPlayerExitedMap(
-            previousMapId
-        );
+        NotifyPlayerExitedMap(previousMapId);
 
         /*
          * 플레이어를 목적지의 독립 PhysicsScene2D로
-         * 이동하고 현재 맵 정보를 변경합니다.
+         * 이동한 뒤 현재 맵 정보를 변경합니다.
          */
         SceneManager.MoveGameObjectToScene(
             player,
@@ -493,19 +460,10 @@ public class MapNetworkManager : NetworkManager
             transition.TargetMapId
         );
 
-        /*
-         * 입력이 차단된 맵 전환 구간에서
-         * 변경된 인벤토리를 저장합니다.
-         */
-        await SaveInventoryAsync(
-            player,
-            true
-        );
+        // 입력이 차단된 맵 전환 구간에서 변경 데이터를 저장합니다.
+        await SaveInventoryAsync(player, true);
+        await SaveQuickSlotsAsync(player, true);
 
-        /*
-         * 저장을 기다리는 동안 연결이 종료될 수 있으므로
-         * 이후 네트워크 처리를 진행하기 전에 확인합니다.
-         */
         if (!IsConnectionActive(conn) ||
             conn.identity == null)
         {
@@ -513,10 +471,6 @@ public class MapNetworkManager : NetworkManager
             return;
         }
 
-        /*
-         * 서버 맵 이동이 정상 반영된 뒤
-         * 마지막 위치를 DB에 저장합니다.
-         */
         accountNetworkController.SaveLastLocation(
             conn,
             transition.TargetMapId,
@@ -529,10 +483,7 @@ public class MapNetworkManager : NetworkManager
             playerHealth.CompleteRevive();
         }
 
-        /*
-         * Scene Interest Management가 변경된
-         * 플레이어 씬을 다시 반영합니다.
-         */
+        // 변경된 서버 씬을 Scene Interest Management에 반영합니다.
         NetworkServer.RebuildObservers(
             conn.identity,
             true
@@ -591,12 +542,10 @@ public class MapNetworkManager : NetworkManager
             localPlayerIdentity.gameObject;
 
         LocalPlayerCameraBinder cameraBinder =
-            localPlayer.GetComponent
-                <LocalPlayerCameraBinder>();
+            localPlayer.GetComponent<LocalPlayerCameraBinder>();
 
         PlayerInputReader inputReader =
-            localPlayer.GetComponent
-                <PlayerInputReader>();
+            localPlayer.GetComponent<PlayerInputReader>();
 
         if (cameraBinder == null ||
             inputReader == null)
@@ -607,28 +556,21 @@ public class MapNetworkManager : NetworkManager
                 localPlayer
             );
 
-            yield return RecoverClientTransition(
-                inputReader
-            );
-
+            yield return RecoverClientTransition(inputReader);
             yield break;
         }
 
-        cameraBinder.BindMapBounds(
-            currentMapId
-        );
+        cameraBinder.BindMapBounds(currentMapId);
 
-        yield return
-            mapSceneManager.UnloadClientMap(
-                previousMapId
-            );
+        yield return mapSceneManager.UnloadClientMap(
+            previousMapId
+        );
 
         if (cameraSettleDelay > 0f)
         {
-            yield return
-                new WaitForSecondsRealtime(
-                    cameraSettleDelay
-                );
+            yield return new WaitForSecondsRealtime(
+                cameraSettleDelay
+            );
         }
 
         if (mapTransitionUI != null)
@@ -638,8 +580,7 @@ public class MapNetworkManager : NetworkManager
         else
         {
             Debug.LogError(
-                $"{nameof(MapTransitionUI)}가 " +
-                "연결되지 않았습니다.",
+                $"{nameof(MapTransitionUI)}가 연결되지 않았습니다.",
                 this
             );
         }
@@ -653,9 +594,6 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
-    /// <summary>
-    /// 변경된 플레이어 인벤토리를 DB에 저장합니다.
-    /// </summary>
     private async Task SaveInventoryAsync(
         GameObject player,
         bool markSaved)
@@ -692,8 +630,7 @@ public class MapNetworkManager : NetworkManager
             databaseManager.PlayerInventoryRepository == null)
         {
             Debug.LogError(
-                "[Inventory] 저장할 DB가 " +
-                "준비되지 않았습니다.",
+                "[Inventory] 저장할 DB가 준비되지 않았습니다.",
                 this
             );
 
@@ -701,9 +638,8 @@ public class MapNetworkManager : NetworkManager
         }
 
         /*
-         * 비동기 대기 전에 필요한 데이터를 복사합니다.
-         * 연결 종료로 플레이어가 제거되어도
-         * DB 저장에 필요한 값은 유지됩니다.
+         * 비동기 대기 전에 데이터를 복사하여
+         * 플레이어가 제거되어도 저장할 수 있게 합니다.
          */
         int userId =
             accountData.UserId;
@@ -720,18 +656,8 @@ public class MapNetworkManager : NetworkManager
                     records
                 );
 
-            /*
-             * 맵 이동 중에는 플레이어가 유지되므로
-             * 저장 성공 상태를 반영합니다.
-             *
-             * 연결 종료 시에는 제거될 오브젝트에
-             * 다시 접근하지 않습니다.
-             */
-            if (markSaved &&
-                inventory != null)
-            {
+            if (markSaved)
                 inventory.MarkSaved();
-            }
 
             Debug.Log(
                 $"[Inventory] 저장 완료 / " +
@@ -744,8 +670,85 @@ public class MapNetworkManager : NetworkManager
         {
             Debug.LogError(
                 $"[Inventory] 저장 실패 / " +
-                $"UserId: {userId}\n" +
-                $"{exception}",
+                $"UserId: {userId}\n{exception}",
+                this
+            );
+        }
+    }
+
+    private async Task SaveQuickSlotsAsync(
+        GameObject player,
+        bool markSaved)
+    {
+        if (player == null)
+            return;
+
+        PlayerAccountData accountData =
+            player.GetComponent<PlayerAccountData>();
+
+        PlayerQuickSlotController quickSlots =
+            player.GetComponent<PlayerQuickSlotController>();
+
+        if (accountData == null ||
+            quickSlots == null)
+        {
+            Debug.LogError(
+                "[QuickSlot] 저장에 필요한 플레이어 " +
+                "컴포넌트를 찾지 못했습니다.",
+                player
+            );
+
+            return;
+        }
+
+        if (!quickSlots.HasUnsavedChanges)
+            return;
+
+        DatabaseManager databaseManager =
+            DatabaseManager.Instance;
+
+        if (databaseManager == null ||
+            !databaseManager.IsInitialized ||
+            databaseManager.PlayerQuickSlotRepository == null)
+        {
+            Debug.LogError(
+                "[QuickSlot] 저장할 DB가 준비되지 않았습니다.",
+                this
+            );
+
+            return;
+        }
+
+        int userId =
+            accountData.UserId;
+
+        List<PlayerQuickSlotRecord> records =
+            quickSlots.CreateSaveSnapshot();
+
+        try
+        {
+            await databaseManager
+                .PlayerQuickSlotRepository
+                .SaveAllAsync(
+                    userId,
+                    records
+                );
+
+            if (markSaved)
+                quickSlots.MarkSaved();
+
+            Debug.Log(
+                $"[QuickSlot] 저장 완료 / " +
+                $"UserId: {userId}, " +
+                $"BindingCount: {records.Count}",
+                this
+            );
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError(
+                $"[QuickSlot] 저장 실패 / " +
+                $"UserId: {userId}\n{exception}",
                 this
             );
         }
@@ -770,15 +773,13 @@ public class MapNetworkManager : NetworkManager
         }
 
         inputReader =
-            localPlayer.GetComponent
-                <PlayerInputReader>();
+            localPlayer.GetComponent<PlayerInputReader>();
 
         if (inputReader != null)
             return true;
 
         Debug.LogError(
-            $"{nameof(PlayerInputReader)}를 " +
-            "찾지 못했습니다.",
+            $"{nameof(PlayerInputReader)}를 찾지 못했습니다.",
             localPlayer
         );
 
@@ -789,9 +790,7 @@ public class MapNetworkManager : NetworkManager
         PlayerInputReader inputReader = null)
     {
         if (mapTransitionUI != null)
-        {
             yield return mapTransitionUI.FadeIn();
-        }
 
         inputReader?.SetInputBlocked(false);
     }
@@ -800,16 +799,12 @@ public class MapNetworkManager : NetworkManager
         MapId mapId,
         out string sceneName)
     {
-        if (!mapSceneManager.TryGetSceneName(
-                mapId,
-                out sceneName))
-        {
-            return false;
-        }
-
-        return SceneManager
-            .GetSceneByName(sceneName)
-            .isLoaded;
+        return mapSceneManager.TryGetSceneName(
+                   mapId,
+                   out sceneName) &&
+               SceneManager
+                   .GetSceneByName(sceneName)
+                   .isLoaded;
     }
 
     private bool TryGetMonsterSpawnManager(
@@ -817,10 +812,8 @@ public class MapNetworkManager : NetworkManager
         out MonsterSpawnManager spawnManager)
     {
         /*
-         * 이미 검색한 맵이면 씬 계층을
-         * 다시 탐색하지 않습니다.
-         *
-         * 관리자가 없는 맵도 null 상태로 캐싱됩니다.
+         * 검색 결과를 캐싱해 매번 서버 씬 계층을
+         * 다시 탐색하지 않도록 합니다.
          */
         if (monsterSpawnManagers.TryGetValue(
                 mapId,
@@ -885,8 +878,8 @@ public class MapNetworkManager : NetworkManager
         return conn != null &&
                NetworkServer.connections.TryGetValue(
                    conn.connectionId,
-                   out NetworkConnectionToClient
-                       activeConnection) &&
+                   out NetworkConnectionToClient activeConnection
+               ) &&
                activeConnection == conn;
     }
 }

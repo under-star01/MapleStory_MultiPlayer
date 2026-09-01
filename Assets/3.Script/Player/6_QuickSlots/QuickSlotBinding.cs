@@ -1,6 +1,8 @@
 public readonly struct QuickSlotBinding
 {
     public QuickSlotBindingType Type { get; }
+    public QuickSlotBindingSource Source { get; }
+
     public SkillId SkillId { get; }
     public BasicActionId BasicActionId { get; }
     public ConsumableId ConsumableId { get; }
@@ -10,49 +12,49 @@ public readonly struct QuickSlotBinding
 
     private QuickSlotBinding(
         QuickSlotBindingType type,
+        QuickSlotBindingSource source,
         SkillId skillId,
         BasicActionId basicActionId,
         ConsumableId consumableId)
     {
         Type = type;
+        Source = source;
         SkillId = skillId;
         BasicActionId = basicActionId;
         ConsumableId = consumableId;
     }
 
-    /// <summary>
-    /// 빈 바인딩을 생성합니다.
-    /// </summary>
     public static QuickSlotBinding Empty()
     {
         return new QuickSlotBinding(
             QuickSlotBindingType.None,
+            QuickSlotBindingSource.None,
             SkillId.None,
             BasicActionId.None,
             ConsumableId.None
         );
     }
 
-    /// <summary>
-    /// 스킬 바인딩을 생성합니다.
-    /// </summary>
     public static QuickSlotBinding FromSkill(
-        SkillId skillId)
+        SkillId skillId,
+        QuickSlotBindingSource source)
     {
-        if (skillId == SkillId.None)
+        if (skillId == SkillId.None ||
+            (source != QuickSlotBindingSource.SkillUI &&
+             source != QuickSlotBindingSource.DefaultActionPalette))
+        {
             return Empty();
+        }
 
         return new QuickSlotBinding(
             QuickSlotBindingType.Skill,
+            source,
             skillId,
             BasicActionId.None,
             ConsumableId.None
         );
     }
 
-    /// <summary>
-    /// 기본 기능 바인딩을 생성합니다.
-    /// </summary>
     public static QuickSlotBinding FromBasicAction(
         BasicActionId actionId)
     {
@@ -61,23 +63,22 @@ public readonly struct QuickSlotBinding
 
         return new QuickSlotBinding(
             QuickSlotBindingType.BasicAction,
+            QuickSlotBindingSource.DefaultActionPalette,
             SkillId.None,
             actionId,
             ConsumableId.None
         );
     }
 
-    /// <summary>
-    /// 소비 아이템 바인딩을 생성합니다.
-    /// </summary>
     public static QuickSlotBinding FromConsumable(
-    ConsumableId consumableId)
+        ConsumableId consumableId)
     {
         if (consumableId == ConsumableId.None)
             return Empty();
 
         return new QuickSlotBinding(
             QuickSlotBindingType.Consumable,
+            QuickSlotBindingSource.Inventory,
             SkillId.None,
             BasicActionId.None,
             consumableId

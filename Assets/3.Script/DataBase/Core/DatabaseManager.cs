@@ -38,6 +38,13 @@ public class DatabaseManager : MonoBehaviour
         private set;
     }
 
+
+    public PlayerQuickSlotRepository PlayerQuickSlotRepository
+    {
+        get;
+        private set;
+    }
+
     public bool IsInitializing
     {
         get;
@@ -129,6 +136,11 @@ public class DatabaseManager : MonoBehaviour
                     connectionString
                 );
 
+            PlayerQuickSlotRepository playerQuickSlotRepository =
+                new PlayerQuickSlotRepository(
+                    connectionString
+                );
+
             List<MonsterRecord> monsters =
                 await monsterRepository
                     .LoadAllAsync();
@@ -170,6 +182,9 @@ public class DatabaseManager : MonoBehaviour
             PlayerInventoryRepository =
                 playerInventoryRepository;
 
+            PlayerQuickSlotRepository =
+                playerQuickSlotRepository;
+
             IsInitialized = true;
 
             Debug.Log(
@@ -178,7 +193,8 @@ public class DatabaseManager : MonoBehaviour
                 $"Item: {StaticData.ItemCount}, " +
                 $"MonsterDrop: {StaticData.MonsterDropCount}, " +
                 $"UserService: Ready, " +
-                $"InventoryRepository: Ready"
+                $"InventoryRepository: Ready, " +
+                $"QuickSlotRepository: Ready"
             );
         }
         catch (System.Exception exception)
@@ -187,6 +203,7 @@ public class DatabaseManager : MonoBehaviour
             UserRepository = null;
             UserAccountService = null;
             PlayerInventoryRepository = null;
+            PlayerQuickSlotRepository = null;
 
             IsInitialized = false;
 

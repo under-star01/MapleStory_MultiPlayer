@@ -5,10 +5,6 @@ public class QuickSlot
     public QuickSlotBinding Binding { get; private set; }
         = QuickSlotBinding.Empty();
 
-    /*
-     * 기본 기능이 등록된 경우에만 값을 가집니다.
-     * 스킬, 소비 아이템 또는 빈 슬롯이면 null입니다.
-     */
     public BasicActionData BasicActionData
     {
         get;
@@ -19,28 +15,27 @@ public class QuickSlot
         Binding.IsEmpty;
 
     public void BindSkill(
-        SkillId skillId)
+        SkillId skillId,
+        QuickSlotBindingSource source)
     {
-        if (skillId == SkillId.None)
-            return;
-
-        Binding =
+        QuickSlotBinding binding =
             QuickSlotBinding.FromSkill(
-                skillId
+                skillId,
+                source
             );
 
+        if (binding.IsEmpty)
+            return;
+
+        Binding = binding;
         BasicActionData = null;
     }
 
-    /// <summary>
-    /// 기본 기능 데이터 전체를 슬롯에 연결합니다.
-    /// </summary>
     public void BindBasicAction(
         BasicActionData actionData)
     {
         if (actionData == null ||
-            actionData.ActionId ==
-                BasicActionId.None ||
+            actionData.ActionId == BasicActionId.None ||
             actionData.Command == null)
         {
             return;
@@ -58,24 +53,18 @@ public class QuickSlot
     public void BindConsumable(
         ConsumableId consumableId)
     {
-        if (consumableId ==
-            ConsumableId.None)
-        {
-            return;
-        }
-
-        Binding =
+        QuickSlotBinding binding =
             QuickSlotBinding.FromConsumable(
                 consumableId
             );
 
+        if (binding.IsEmpty)
+            return;
+
+        Binding = binding;
         BasicActionData = null;
     }
 
-    /// <summary>
-    /// 슬롯에 등록된 기본 기능을 실행합니다.
-    /// 스킬과 소비 아이템은 서버 실행 경로를 따로 사용합니다.
-    /// </summary>
     public bool ExecuteBasicAction(
         Vector2 inputDirection)
     {
@@ -99,10 +88,6 @@ public class QuickSlot
         BasicActionData = null;
     }
 
-    /// <summary>
-    /// Binding과 BasicActionData를 함께 교환합니다.
-    /// 대상이 비어 있으면 이동처럼 동작합니다.
-    /// </summary>
     public void SwapWith(
         QuickSlot other)
     {
@@ -112,22 +97,10 @@ public class QuickSlot
             return;
         }
 
-        QuickSlotBinding tempBinding =
-            Binding;
+        (Binding, other.Binding) =
+            (other.Binding, Binding);
 
-        BasicActionData tempActionData =
-            BasicActionData;
-
-        Binding =
-            other.Binding;
-
-        BasicActionData =
-            other.BasicActionData;
-
-        other.Binding =
-            tempBinding;
-
-        other.BasicActionData =
-            tempActionData;
+        (BasicActionData, other.BasicActionData) =
+            (other.BasicActionData, BasicActionData);
     }
 }

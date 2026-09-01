@@ -50,7 +50,8 @@ public class DefaultActionSlotUI :
 
         binding =
             QuickSlotBinding.FromSkill(
-                skillId
+                skillId,
+                QuickSlotBindingSource.DefaultActionPalette
             );
 
         basicActionData = null;
