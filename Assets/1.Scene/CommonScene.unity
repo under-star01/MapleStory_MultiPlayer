@@ -19448,7 +19448,6 @@ GameObject:
   - component: {fileID: 1965684449}
   - component: {fileID: 1965684453}
   - component: {fileID: 1965684451}
-  - component: {fileID: 1965684456}
   - component: {fileID: 1965684457}
   - component: {fileID: 1965684455}
   - component: {fileID: 1965684454}
@@ -19625,21 +19624,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1e1a6314006f084bb2551e2c6d6e4a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AccountNetworkController
---- !u!114 &1965684456
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1965684445}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 461233ee6e5d8e849b12459dad7197d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InitialMapEntryController
-  defaultMapId: 0
-  mapNetworkManager: {fileID: 0}
-  mapSceneManager: {fileID: 0}
 --- !u!114 &1965684457
 MonoBehaviour:
   m_ObjectHideFlags: 0
