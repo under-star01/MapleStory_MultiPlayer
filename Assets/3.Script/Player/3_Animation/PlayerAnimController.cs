@@ -176,11 +176,48 @@ public class PlayerAnimController : NetworkBehaviour
          * 호스트는 서버에서 이미
          * 클립을 교체했습니다.
          */
-        if (isServer)
+        if (!isServer)
+        {
+            SetActionClip(
+                animationType
+            );
+        }
+
+        PlayActionSound(
+            animationType
+        );
+    }
+
+    private void PlayActionSound(
+        ActionAnimationType animationType)
+    {
+        SkillSoundId soundId =
+            SkillSoundId.None;
+
+        switch (animationType)
+        {
+            case ActionAnimationType.BasicAttack:
+                soundId =
+                    SkillSoundId.BasicAttack;
+                break;
+
+            case ActionAnimationType.AttackSkill1:
+                soundId =
+                    SkillSoundId.SkillAttack1;
+                break;
+
+            case ActionAnimationType.TeleportSkill:
+                soundId =
+                    SkillSoundId.DashSkill;
+                break;
+        }
+
+        if (soundId == SkillSoundId.None)
             return;
 
-        SetActionClip(
-            animationType
+        AudioManager.Instance?.PlaySkill(
+            soundId,
+            isOwned
         );
     }
 
@@ -277,6 +314,25 @@ public class PlayerAnimController : NetworkBehaviour
             "Idle",
             0,
             0f
+        );
+    }
+
+    [Server]
+    public void PlaySkillSound(
+    SkillSoundId soundId)
+    {
+        RpcPlaySkillSound(
+            soundId
+        );
+    }
+
+    [ClientRpc]
+    private void RpcPlaySkillSound(
+        SkillSoundId soundId)
+    {
+        AudioManager.Instance?.PlaySkill(
+            soundId,
+            isOwned
         );
     }
 }

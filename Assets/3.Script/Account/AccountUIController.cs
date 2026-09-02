@@ -79,6 +79,10 @@ public class AccountUIController : MonoBehaviour
     /// </summary>
     public void OnClickLogin()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.MouseClick
+        );
+
         if (isRequestPending)
             return;
 
@@ -105,6 +109,10 @@ public class AccountUIController : MonoBehaviour
     /// </summary>
     public void OnClickOpenRegister()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIOpen
+        );
+
         if (isRequestPending)
             return;
 
@@ -123,6 +131,10 @@ public class AccountUIController : MonoBehaviour
     /// </summary>
     public void OnClickRegister()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.MouseClick
+        );
+
         if (isRequestPending)
             return;
 
@@ -150,6 +162,10 @@ public class AccountUIController : MonoBehaviour
     /// </summary>
     public void OnClickBackToLogin()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIClose
+        );
+
         if (isRequestPending)
             return;
 
@@ -161,6 +177,10 @@ public class AccountUIController : MonoBehaviour
     /// </summary>
     public void OnClickExit()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIClose
+        );
+
 #if UNITY_EDITOR
         UnityEditor.EditorApplication
             .isPlaying = false;

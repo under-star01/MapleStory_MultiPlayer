@@ -41,10 +41,15 @@ public class JumpSkill : PlayerSkillBase
         if (IsDownInput(context))
         {
             context.Move.RequestDropDown();
-            return;
+        }
+        else
+        {
+            context.Move.RequestJump();
         }
 
-        context.Move.RequestJump();
+        context.Anim.PlaySkillSound(
+            SkillSoundId.Jump
+        );
     }
 
     private void ExecuteAirJump(
@@ -76,6 +81,10 @@ public class JumpSkill : PlayerSkillBase
             return;
 
         context.Effect.PlayUpJumpEffect();
+
+        context.Anim.PlaySkillSound(
+            SkillSoundId.UpJump
+        );
     }
 
     private void ExecuteDoubleJump(
@@ -90,6 +99,10 @@ public class JumpSkill : PlayerSkillBase
 
         context.Effect.PlayDoubleJumpEffect(
             direction
+        );
+
+        context.Anim.PlaySkillSound(
+            SkillSoundId.DoubleJump
         );
     }
 

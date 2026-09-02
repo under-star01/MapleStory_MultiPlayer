@@ -17,7 +17,7 @@ public enum EffectSoundId
     DragEnd = 4,
     UseItem = 5,
     PickUp = 6,
-    Setting = 7,
+    Setting = 7
 }
 
 public enum SkillSoundId
@@ -26,8 +26,9 @@ public enum SkillSoundId
     BasicAttack = 0,
     Jump = 1,
     DoubleJump = 2,
-    SkillAttack1 = 3,
-    DashSkill = 4
+    UpJump = 3,
+    SkillAttack1 = 4,
+    DashSkill = 5
 }
 
 public class AudioManager : MonoBehaviour
@@ -38,10 +39,14 @@ public class AudioManager : MonoBehaviour
     private const string EffectVolumeKey =
         "EffectVolume";
 
-    private const string SkillVolumeKey =
-        "SkillVolume";
+    private const string PlayerVolumeKey =
+        "PlayerVolume";
+
+    private const string OtherPlayerVolumeKey =
+        "OtherPlayerVolume";
 
     private const float DefaultVolume = 0.5f;
+    private const float DefaultOtherPlayerVolume = 0.2f;
 
     public static AudioManager Instance
     {
@@ -52,7 +57,8 @@ public class AudioManager : MonoBehaviour
     [Header("Audio Sources")]
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource effectSource;
-    [SerializeField] private AudioSource skillSource;
+    [SerializeField] private AudioSource playerSource;
+    [SerializeField] private AudioSource otherPlayerSource;
 
     [Header("Audio Clips")]
     [SerializeField] private AudioClip[] bgmClips;
@@ -69,9 +75,14 @@ public class AudioManager : MonoBehaviour
             ? effectSource.volume
             : 0f;
 
-    public float SkillVolume =>
-        skillSource != null
-            ? skillSource.volume
+    public float PlayerVolume =>
+        playerSource != null
+            ? playerSource.volume
+            : 0f;
+
+    public float OtherPlayerVolume =>
+        otherPlayerSource != null
+            ? otherPlayerSource.volume
             : 0f;
 
     private void Awake()
@@ -91,7 +102,9 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        PlayBgm(BgmSoundId.Common);
+        PlayBgm(
+            BgmSoundId.Common
+        );
     }
 
     private void OnDestroy()
@@ -112,7 +125,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        // 현재 재생 중인 BGM과 같으면 처음부터 다시 재생하지 않습니다.
+        // 같은 BGM이면 처음부터 다시 재생하지 않습니다.
         if (bgmSource.clip == clip &&
             bgmSource.isPlaying)
         {
@@ -135,14 +148,21 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        effectSource.PlayOneShot(clip);
+        effectSource.PlayOneShot(
+            clip
+        );
     }
 
+    /// <summary>
+    /// 플레이어 행동 효과음을 재생합니다.
+    /// 자신의 행동과 다른 플레이어의 행동을
+    /// 서로 다른 AudioSource로 구분합니다.
+    /// </summary>
     public void PlaySkill(
-        SkillSoundId soundId)
+        SkillSoundId soundId,
+        bool isLocalPlayer)
     {
-        if (skillSource == null ||
-            !TryGetClip(
+        if (!TryGetClip(
                 skillClips,
                 (int)soundId,
                 out AudioClip clip))
@@ -150,7 +170,14 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        skillSource.PlayOneShot(clip);
+        AudioSource source =
+            isLocalPlayer
+                ? playerSource
+                : otherPlayerSource;
+
+        source?.PlayOneShot(
+            clip
+        );
     }
 
     public void StopBgm()
@@ -178,35 +205,47 @@ public class AudioManager : MonoBehaviour
         );
     }
 
-    public void SetSkillVolume(
+    public void SetPlayerVolume(
         float volume)
     {
         SetVolume(
-            skillSource,
-            SkillVolumeKey,
+            playerSource,
+            PlayerVolumeKey,
+            volume
+        );
+    }
+
+    public void SetOtherPlayerVolume(
+        float volume)
+    {
+        SetVolume(
+            otherPlayerSource,
+            OtherPlayerVolumeKey,
             volume
         );
     }
 
     private void InitializeSources()
     {
-        if (bgmSource != null)
-        {
-            bgmSource.playOnAwake = false;
-            bgmSource.loop = true;
-        }
+        InitializeSource(
+            bgmSource,
+            true
+        );
 
-        if (effectSource != null)
-        {
-            effectSource.playOnAwake = false;
-            effectSource.loop = false;
-        }
+        InitializeSource(
+            effectSource,
+            false
+        );
 
-        if (skillSource != null)
-        {
-            skillSource.playOnAwake = false;
-            skillSource.loop = false;
-        }
+        InitializeSource(
+            playerSource,
+            false
+        );
+
+        InitializeSource(
+            otherPlayerSource,
+            false
+        );
     }
 
     // 이전 실행에서 저장한 로컬 볼륨을 불러옵니다.
@@ -229,12 +268,31 @@ public class AudioManager : MonoBehaviour
         );
 
         SetSourceVolume(
-            skillSource,
+            playerSource,
             PlayerPrefs.GetFloat(
-                SkillVolumeKey,
+                PlayerVolumeKey,
                 DefaultVolume
             )
         );
+
+        SetSourceVolume(
+            otherPlayerSource,
+            PlayerPrefs.GetFloat(
+                OtherPlayerVolumeKey,
+                DefaultOtherPlayerVolume
+            )
+        );
+    }
+
+    private static void InitializeSource(
+        AudioSource source,
+        bool loop)
+    {
+        if (source == null)
+            return;
+
+        source.playOnAwake = false;
+        source.loop = loop;
     }
 
     private static void SetVolume(
@@ -245,9 +303,11 @@ public class AudioManager : MonoBehaviour
         if (source == null)
             return;
 
-        volume = Mathf.Clamp01(volume);
+        volume =
+            Mathf.Clamp01(volume);
 
-        source.volume = volume;
+        source.volume =
+            volume;
 
         PlayerPrefs.SetFloat(
             saveKey,
@@ -268,7 +328,7 @@ public class AudioManager : MonoBehaviour
             Mathf.Clamp01(volume);
     }
 
-    // enum 값을 배열 인덱스로 사용하되 잘못된 값은 재생하지 않습니다.
+    // enum 값을 AudioClip 배열 인덱스로 사용합니다.
     private static bool TryGetClip(
         AudioClip[] clips,
         int index,
@@ -283,7 +343,8 @@ public class AudioManager : MonoBehaviour
             return false;
         }
 
-        clip = clips[index];
+        clip =
+            clips[index];
 
         return clip != null;
     }

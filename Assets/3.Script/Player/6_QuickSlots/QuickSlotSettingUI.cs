@@ -324,12 +324,20 @@ public class QuickSlotSettingUI : MonoBehaviour, ILocalPlayerUI
 
     public void Open()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIOpen
+        );
+
         SetWindowVisible(true);
         RefreshAllSlots();
     }
 
     public void Close()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIClose
+        );
+
         CancelPick();
         SetWindowVisible(false);
     }
@@ -560,6 +568,11 @@ public class QuickSlotSettingUI : MonoBehaviour, ILocalPlayerUI
         pickedBinding = binding;
         SetPickedIcon(icon);
 
+
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.DragStart
+        );
+
         return true;
     }
 
@@ -585,6 +598,10 @@ public class QuickSlotSettingUI : MonoBehaviour, ILocalPlayerUI
 
     private void FinishPick()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.DragEnd
+        );
+
         ClearPickedState(false);
         RefreshAllSlots();
     }

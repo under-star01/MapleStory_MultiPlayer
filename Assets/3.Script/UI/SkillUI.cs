@@ -15,7 +15,10 @@ public class SkillUI : MonoBehaviour
         canvasGroup =
             GetComponent<CanvasGroup>();
 
-        SetWindowVisible(startOpened);
+        SetWindowVisible(
+            startOpened,
+            false
+        );
     }
 
     public void Open()
@@ -36,9 +39,19 @@ public class SkillUI : MonoBehaviour
     }
 
     private void SetWindowVisible(
-        bool visible)
+        bool visible,
+        bool playSound = true)
     {
         IsOpened = visible;
+
+        if (playSound)
+        {
+            AudioManager.Instance?.PlayEffect(
+                visible
+                    ? EffectSoundId.UIOpen
+                    : EffectSoundId.UIClose
+            );
+        }
 
         canvasGroup.alpha =
             visible ? 1f : 0f;
