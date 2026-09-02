@@ -295,14 +295,14 @@ public class MonsterHealth : NetworkBehaviour
     [ClientRpc]
     private void RpcPlayHitAnimation()
     {
-        /*
-         * 호스트에서는 서버에서 이미 실행했으므로
-         * 같은 Trigger를 중복 실행하지 않습니다.
-         */
-        if (isServer)
-            return;
+        if (!isServer)
+        {
+            PlayHitAnimation();
+        }
 
-        PlayHitAnimation();
+        AudioManager.Instance?.PlayMonster(
+            MonsterSoundId.Hit
+        );
     }
 
     /// <summary>
@@ -324,6 +324,10 @@ public class MonsterHealth : NetworkBehaviour
     {
         animator.ResetTrigger(HitHash);
         animator.SetTrigger(DieHash);
+
+        AudioManager.Instance?.PlayMonster(
+            MonsterSoundId.Die
+        );
     }
 
     [Server]

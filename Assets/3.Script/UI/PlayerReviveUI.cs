@@ -75,12 +75,20 @@ public class PlayerReviveUI :
 
     private void Show()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.Die
+        );
+
         reviveButton.interactable = true;
         SetVisible(true);
     }
 
     private void Hide()
     {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.UIClose
+        );
+
         SetVisible(false);
     }
 

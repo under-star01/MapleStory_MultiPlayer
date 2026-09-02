@@ -127,6 +127,8 @@ public class PlayerMapController : NetworkBehaviour
             return;
         }
 
+        TargetPlayPortalSound(connectionToClient);
+
         mapNetworkManager.RequestMapTransition(
             connectionToClient,
             currentPortal.TargetMapId,
@@ -157,6 +159,8 @@ public class PlayerMapController : NetworkBehaviour
          */
         currentPortal = null;
 
+        TargetPlayPortalSound(connectionToClient);
+
         mapNetworkManager.RequestMapTransition(
             connectionToClient,
             reviveMapId,
@@ -164,5 +168,14 @@ public class PlayerMapController : NetworkBehaviour
         );
 
         return true;
+    }
+
+    [TargetRpc]
+    private void TargetPlayPortalSound(
+        NetworkConnection target)
+    {
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.Portal
+        );
     }
 }

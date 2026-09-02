@@ -318,6 +318,10 @@ public class QuickSlotSettingUI : MonoBehaviour, ILocalPlayerUI
         if (!IsPicking)
             return;
 
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.DragEnd
+        );
+
         ClearPickedState(true);
         RefreshAllSlots();
     }

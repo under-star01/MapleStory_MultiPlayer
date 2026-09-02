@@ -34,11 +34,13 @@ public class InitialPlayerEntryController : MonoBehaviour
     private MapId defaultMapId =
         MapId.MainTown;
 
-    // 서버 맵 준비를 기다리는 연결입니다.
+    [Header("Transition")]
+    [SerializeField]
+    private MapTransitionUI mapTransitionUI;
+
     private readonly HashSet<NetworkConnectionToClient>
         preparingConnections = new();
 
-    // 입장 맵이 결정된 뒤 클라이언트의 로드 완료를 기다립니다.
     private readonly Dictionary
         <NetworkConnectionToClient, PendingPlayerEntry>
         pendingEntries = new();
@@ -141,7 +143,6 @@ public class InitialPlayerEntryController : MonoBehaviour
         NetworkConnectionToClient conn,
         UserRecord user)
     {
-        // 로그인이 먼저 끝날 수 있으므로 서버 맵 준비를 기다립니다.
         yield return new WaitUntil(
             () => mapSceneManager.AreServerMapsLoaded
         );
@@ -197,7 +198,6 @@ public class InitialPlayerEntryController : MonoBehaviour
         );
     }
 
-    // DB의 마지막 위치가 유효하지 않으면 기본 위치를 사용합니다.
     private void ResolveEntryLocation(
         UserRecord user,
         out MapId targetMapId,
@@ -253,7 +253,14 @@ public class InitialPlayerEntryController : MonoBehaviour
     private IEnumerator LoadClientMapAndNotifyServer(
         MapId mapId)
     {
-        yield return mapSceneManager.LoadClientMap(mapId);
+        if (mapTransitionUI != null)
+        {
+            yield return mapTransitionUI.FadeOut();
+        }
+
+        yield return mapSceneManager.LoadClientMap(
+            mapId
+        );
 
         if (!IsClientMapLoaded(
                 mapId,
@@ -265,6 +272,11 @@ public class InitialPlayerEntryController : MonoBehaviour
                 this
             );
 
+            if (mapTransitionUI != null)
+            {
+                yield return mapTransitionUI.FadeIn();
+            }
+
             yield break;
         }
 
@@ -275,6 +287,23 @@ public class InitialPlayerEntryController : MonoBehaviour
             }
         );
 
+        yield return new WaitUntil(
+            () => NetworkClient.localPlayer != null
+        );
+
+        yield return new WaitForSecondsRealtime(
+            0.5f
+        );
+
+        AudioManager.Instance?.PlayEffect(
+            EffectSoundId.Portal
+        );
+
+        if (mapTransitionUI != null)
+        {
+            yield return mapTransitionUI.FadeIn();
+        }
+
         Debug.Log(
             $"[InitialPlayerEntry] 클라이언트 맵 로드 완료 / " +
             $"Map: {mapId}, Scene: {sceneName}",
@@ -282,7 +311,6 @@ public class InitialPlayerEntryController : MonoBehaviour
         );
     }
 
-    // 클라이언트 맵 로드가 끝나면 DB 데이터를 읽고 플레이어를 생성합니다.
     private async void OnServerMapLoaded(
         NetworkConnectionToClient conn,
         MapLoadedMessage message)
@@ -394,7 +422,6 @@ public class InitialPlayerEntryController : MonoBehaviour
                         pendingEntry.User.UserId
                     );
 
-            // DB 조회 중 연결이 종료됐을 수 있으므로 다시 검사합니다.
             if (!IsConnectionActive(conn))
             {
                 CancelEntry(conn);
@@ -493,10 +520,6 @@ public class InitialPlayerEntryController : MonoBehaviour
 
         mapController.SetCurrentMap(entry.MapId);
 
-        /*
-         * 서버의 독립 PhysicsScene2D에 포함되도록
-         * Network Spawn 전에 목적지 씬으로 이동합니다.
-         */
         SceneManager.MoveGameObjectToScene(
             player,
             targetScene
@@ -521,7 +544,6 @@ public class InitialPlayerEntryController : MonoBehaviour
                 new PlayerQuickSlotLoadData(record);
         }
 
-        // 서버 저장 상태와 소유 클라이언트 복원 데이터를 함께 초기화합니다.
         quickSlotController.InitializeServerBindings(
             quickSlotRecords
         );

@@ -440,10 +440,19 @@ public class PlayerInventory : NetworkBehaviour
             itemRecord.HealAmount
         );
 
-        return TryRemoveConsumable(
-            consumableId,
-            1
+        if (!TryRemoveConsumable(
+                consumableId,
+                1))
+        {
+            return false;
+        }
+
+        TargetPlayEffectSound(
+            connectionToClient,
+            EffectSoundId.UseItem
         );
+
+        return true;
     }
 
     public bool TryGetConsumableData(
@@ -563,7 +572,13 @@ public class PlayerInventory : NetworkBehaviour
         if (nearestDrop == null)
             return;
 
-        nearestDrop.TryCollect(this);
+        if (nearestDrop.TryCollect(this))
+        {
+            TargetPlayEffectSound(
+                connectionToClient,
+                EffectSoundId.PickUp
+            );
+        }
     }
 
     [Server]
@@ -597,5 +612,15 @@ public class PlayerInventory : NetworkBehaviour
     private void MarkInventoryChanged()
     {
         hasUnsavedChanges = true;
+    }
+
+    [TargetRpc]
+    private void TargetPlayEffectSound(
+        NetworkConnection target,
+        EffectSoundId soundId)
+    {
+        AudioManager.Instance?.PlayEffect(
+            soundId
+        );
     }
 }

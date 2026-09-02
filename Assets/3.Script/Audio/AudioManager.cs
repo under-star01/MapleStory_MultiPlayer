@@ -17,7 +17,9 @@ public enum EffectSoundId
     DragEnd = 4,
     UseItem = 5,
     PickUp = 6,
-    Setting = 7
+    Setting = 7,
+    Die = 8,
+    Portal = 9
 }
 
 public enum SkillSoundId
@@ -29,6 +31,13 @@ public enum SkillSoundId
     UpJump = 3,
     SkillAttack1 = 4,
     DashSkill = 5
+}
+
+public enum MonsterSoundId
+{
+    None = -1,
+    Hit = 0,
+    Die = 1
 }
 
 public class AudioManager : MonoBehaviour
@@ -45,6 +54,9 @@ public class AudioManager : MonoBehaviour
     private const string OtherPlayerVolumeKey =
         "OtherPlayerVolume";
 
+    private const string MonsterVolumeKey =
+        "MonsterVolume";
+
     private const float DefaultVolume = 0.5f;
     private const float DefaultOtherPlayerVolume = 0.2f;
 
@@ -58,13 +70,15 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource effectSource;
     [SerializeField] private AudioSource playerSource;
-    [SerializeField] private AudioSource otherPlayerSource;
+    [SerializeField] private AudioSource otherPlayerSource; 
+    [SerializeField] private AudioSource monsterSource;
 
     [Header("Audio Clips")]
     [SerializeField] private AudioClip[] bgmClips;
     [SerializeField] private AudioClip[] effectClips;
     [SerializeField] private AudioClip[] skillClips;
-
+    [SerializeField] private AudioClip[] monsterClips;
+    
     public float BgmVolume =>
         bgmSource != null
             ? bgmSource.volume
@@ -83,6 +97,11 @@ public class AudioManager : MonoBehaviour
     public float OtherPlayerVolume =>
         otherPlayerSource != null
             ? otherPlayerSource.volume
+            : 0f;
+
+    public float MonsterVolume =>
+        monsterSource != null
+            ? monsterSource.volume
             : 0f;
 
     private void Awake()
@@ -180,6 +199,23 @@ public class AudioManager : MonoBehaviour
         );
     }
 
+    public void PlayMonster(
+        MonsterSoundId soundId)
+    {
+        if (monsterSource == null ||
+            !TryGetClip(
+                monsterClips,
+                (int)soundId,
+                out AudioClip clip))
+        {
+            return;
+        }
+
+        monsterSource.PlayOneShot(
+            clip
+        );
+    }
+
     public void StopBgm()
     {
         bgmSource?.Stop();
@@ -225,6 +261,16 @@ public class AudioManager : MonoBehaviour
         );
     }
 
+    public void SetMonsterVolume(
+    float volume)
+    {
+        SetVolume(
+            monsterSource,
+            MonsterVolumeKey,
+            volume
+        );
+    }
+
     private void InitializeSources()
     {
         InitializeSource(
@@ -244,6 +290,11 @@ public class AudioManager : MonoBehaviour
 
         InitializeSource(
             otherPlayerSource,
+            false
+        );
+
+        InitializeSource(
+            monsterSource,
             false
         );
     }
@@ -280,6 +331,14 @@ public class AudioManager : MonoBehaviour
             PlayerPrefs.GetFloat(
                 OtherPlayerVolumeKey,
                 DefaultOtherPlayerVolume
+            )
+        );
+
+        SetSourceVolume(
+            monsterSource,
+            PlayerPrefs.GetFloat(
+                MonsterVolumeKey,
+                DefaultVolume
             )
         );
     }
