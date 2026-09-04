@@ -59,10 +59,7 @@ public class DamageNumberManager : MonoBehaviour
         CreateInitialPool();
     }
 
-    /// <summary>
-    /// 한 번의 공격으로 계산된 모든 타격 결과를
-    /// 공통 시간 간격으로 순서대로 표시합니다.
-    /// </summary>
+    // 한 번의 공격에 포함된 타격 데미지를 순서대로 표시
     public void ShowDamageSequence(
         Vector3 worldPosition,
         DamageHitResult[] hitResults)
@@ -97,10 +94,6 @@ public class DamageNumberManager : MonoBehaviour
                 result
             );
 
-            /*
-             * 마지막 타격 이후에는
-             * 다음 숫자를 기다릴 필요가 없습니다.
-             */
             if (i < hitResults.Length - 1 &&
                 hitDisplayInterval > 0f)
             {
@@ -130,6 +123,7 @@ public class DamageNumberManager : MonoBehaviour
         );
     }
 
+    // 풀에서 사용 가능한 데미지 숫자 대여
     private DamageNumberView RentView()
     {
         DamageNumberView view;
@@ -148,6 +142,7 @@ public class DamageNumberManager : MonoBehaviour
         return view;
     }
 
+    // 사용이 끝난 데미지를 풀에 반환
     private void ReturnView(
         DamageNumberView view)
     {
@@ -155,14 +150,18 @@ public class DamageNumberManager : MonoBehaviour
             return;
 
         view.gameObject.SetActive(false);
+
         view.transform.SetParent(
             poolRoot,
             false
         );
 
-        viewPool.Enqueue(view);
+        viewPool.Enqueue(
+            view
+        );
     }
 
+    // 시작 시 사용할 데미지 미리 생성
     private void CreateInitialPool()
     {
         if (viewPrefab == null)
@@ -176,7 +175,10 @@ public class DamageNumberManager : MonoBehaviour
                 CreateView();
 
             view.gameObject.SetActive(false);
-            viewPool.Enqueue(view);
+
+            viewPool.Enqueue(
+                view
+            );
         }
     }
 

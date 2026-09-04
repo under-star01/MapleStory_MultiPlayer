@@ -44,10 +44,7 @@ public class DamageNumberView : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 데미지 숫자를 표시하고 연출을 시작합니다.
-    /// 연출이 끝나면 returnCallback을 호출합니다.
-    /// </summary>
+    // 데미지 숫자를 구성하고 표시 애니메이션 시작
     public void Show(
         int damage,
         bool isCritical,
@@ -57,7 +54,9 @@ public class DamageNumberView : MonoBehaviour
     {
         if (displayCoroutine != null)
         {
-            StopCoroutine(displayCoroutine);
+            StopCoroutine(
+                displayCoroutine
+            );
         }
 
         this.returnCallback =
@@ -84,9 +83,7 @@ public class DamageNumberView : MonoBehaviour
             );
     }
 
-    /// <summary>
-    /// 전달받은 숫자를 자릿수별 SpriteRenderer로 구성합니다.
-    /// </summary>
+    // 데미지를 자릿수별 SpriteRenderer로 구성
     private void BuildNumber(
         int damage,
         Sprite[] digitSprites)
@@ -168,10 +165,7 @@ public class DamageNumberView : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 필요한 자릿수만큼 SpriteRenderer를 확보합니다.
-    /// 이미 생성한 Renderer는 계속 재사용합니다.
-    /// </summary>
+    // 필요한 자릿수만큼 Renderer 확보 후 재사용
     private void EnsureRendererCount(
         int requiredCount)
     {
@@ -227,8 +221,8 @@ public class DamageNumberView : MonoBehaviour
         return totalWidth;
     }
 
-    private IEnumerator
-        PlayDisplayAnimation()
+    // 위로 이동하며 일정 구간부터 투명하게 사라지는 연출
+    private IEnumerator PlayDisplayAnimation()
     {
         float elapsedTime = 0f;
 

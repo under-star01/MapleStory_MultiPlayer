@@ -17,10 +17,7 @@ public class PlayerInventoryRepository
             );
     }
 
-    /// <summary>
-    /// 지정한 유저가 보유한 모든 아이템과
-    /// 수량을 조회합니다.
-    /// </summary>
+    // 지정한 유저의 전체 인벤토리 조회
     public async Task<List<PlayerInventoryRecord>>
         LoadByUserIdAsync(
             int userId)
@@ -71,13 +68,7 @@ public class PlayerInventoryRepository
         return records;
     }
 
-    /// <summary>
-    /// 유저의 현재 인벤토리 스냅샷을
-    /// DB에 전체 저장합니다.
-    ///
-    /// 기존 데이터 삭제와 신규 데이터 삽입은
-    /// 하나의 트랜잭션으로 처리합니다.
-    /// </summary>
+    // 현재 인벤토리 스냅샷을 트랜잭션으로 전체 저장
     public async Task SaveAllAsync(
         int userId,
         IReadOnlyCollection<PlayerInventoryRecord>

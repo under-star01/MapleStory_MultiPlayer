@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public sealed class SkillContext
@@ -10,6 +9,7 @@ public sealed class SkillContext
     public PlayerAnimController Anim { get; }
     public PlayerSkillController SkillController { get; }
     public PlayerEffectController Effect { get; }
+    public PlayerInventory Inventory { get; }
 
     public Vector2 InputDirection { get; }
 
@@ -25,6 +25,7 @@ public sealed class SkillContext
         PlayerAnimController anim,
         PlayerEffectController effect,
         PlayerSkillController skillController,
+        PlayerInventory inventory,
         Vector2 inputDirection)
     {
         User = user;
@@ -34,6 +35,7 @@ public sealed class SkillContext
         Anim = anim;
         Effect = effect;
         SkillController = skillController;
+        Inventory = inventory;
         InputDirection = inputDirection;
     }
 }

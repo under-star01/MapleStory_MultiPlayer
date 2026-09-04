@@ -165,8 +165,8 @@ public class PlayerMove : NetworkBehaviour
         );
 
         /*
-         * 순수 클라이언트는 물리를 계산하지 않고
-         * 서버의 물리 결과만 표시합니다.
+         * 클라이언트는 물리를 계산하지 않고
+         * 서버의 물리 결과만 표시
          */
         if (!isServer)
         {
@@ -185,9 +185,7 @@ public class PlayerMove : NetworkBehaviour
         ClampFallSpeed();
     }
 
-    /// <summary>
-    /// 서버에서 플레이어의 좌우 이동 입력을 설정합니다.
-    /// </summary>
+    // 서버에서 플레이어의 좌우 이동 입력을 설정
     [Server]
     public void SetMoveInput(
         float input)
@@ -205,10 +203,7 @@ public class PlayerMove : NetworkBehaviour
         UpdateDirection();
     }
 
-    /// <summary>
-    /// 지상 점프를 예약합니다.
-    /// 실제 물리 처리는 FixedUpdate에서 수행합니다.
-    /// </summary>
+    // 점프를 요청
     [Server]
     public bool RequestJump()
     {
@@ -220,9 +215,7 @@ public class PlayerMove : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 입력한 좌우 방향으로 추가 점프를 예약합니다.
-    /// </summary>
+    // 입력한 좌우 방향으로 추가 점프 요청
     [Server]
     public bool RequestDoubleJump(
         float direction)
@@ -248,9 +241,7 @@ public class PlayerMove : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 위쪽으로 추가 점프를 예약합니다.
-    /// </summary>
+    // 위쪽으로 추가 점프 요청
     [Server]
     public bool RequestUpJump()
     {
@@ -274,10 +265,7 @@ public class PlayerMove : NetworkBehaviour
         hasUsedAirJump = true;
     }
 
-    /// <summary>
-    /// 현재 밟고 있는 단방향 발판을
-    /// 아래로 통과합니다.
-    /// </summary>
+    // 하단 점프 요청
     [Server]
     public bool RequestDropDown()
     {
@@ -293,10 +281,7 @@ public class PlayerMove : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 외부 기능에서 플레이어의
-    /// 이동 가능 여부를 설정합니다.
-    /// </summary>
+    // 이동 가능 여부 설정
     [Server]
     public void SetMovementEnabled(
         bool enabled,
@@ -318,10 +303,7 @@ public class PlayerMove : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// 공격자의 반대 방향과 위쪽으로
-    /// 피격 넉백을 적용합니다.
-    /// </summary>
+    // 넉백 반응 적용
     [Server]
     public void ApplyKnockback(
         Vector2 attackerPosition)
@@ -394,10 +376,8 @@ public class PlayerMove : NetworkBehaviour
                 ? rb.linearVelocity.x
                 : 0f;
 
-        /*
-         * 더블 점프는 기존 속도를 모두 제거하고,
-         * 윗점프는 기존 수평 속도만 유지합니다.
-         */
+        // 더블 점프: 기존 속도 모두 제거
+        // 윗점프: 기존 수평 속도만 유지
         rb.linearVelocity =
             new Vector2(
                 horizontalVelocity,
@@ -546,10 +526,7 @@ public class PlayerMove : NetworkBehaviour
         IsGrounded = false;
         ClearJumpRequests();
 
-        /*
-         * 하단 점프 후에는 공중 추가 점프를
-         * 한 번 사용할 수 있도록 초기화합니다.
-         */
+        // 하단 점프 후 공중 추가 점프 초기화
         hasUsedAirJump = false;
         keepAirJumpMomentum = false;
 
@@ -596,10 +573,7 @@ public class PlayerMove : NetworkBehaviour
         ignoredPlatform = null;
     }
 
-    /// <summary>
-    /// 서버에서 플레이어를 지정한 위치로 이동시키고
-    /// 기존 물리 상태를 초기화합니다.
-    /// </summary>
+    // 서버에서 플레이어를 지정한 위치로 이동 및 물리상태 초기화
     [Server]
     public void MovePosition(
         Vector2 position)
@@ -688,10 +662,7 @@ public class PlayerMove : NetworkBehaviour
             if (hit.collider == null)
                 continue;
 
-            /*
-             * 현재 밟고 있는 바닥처럼
-             * 이동 방향을 막지 않는 접촉은 제외합니다.
-             */
+            // 밟고 있는 바닥처럼 이동 방향을 막지 않는 접촉은 제외
             if (hit.distance <= 0.001f &&
                 Vector2.Dot(
                     hit.normal,

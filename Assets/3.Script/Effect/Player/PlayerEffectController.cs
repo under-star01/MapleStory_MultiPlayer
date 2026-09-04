@@ -3,9 +3,7 @@ using UnityEngine;
 
 public class PlayerEffectController : NetworkBehaviour
 {
-    /// <summary>
-    /// 서버에서 AttackSkill1 이펙트를 요청합니다.
-    /// </summary>
+    // AttackSkill1 이펙트 재생
     [Server]
     public void PlayAttackSkill1Effect(
         float direction)
@@ -29,9 +27,7 @@ public class PlayerEffectController : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버에서 좌우 추가 점프 이펙트를 요청합니다.
-    /// </summary>
+    // 좌우 추가 점프 이펙트 재생
     [Server]
     public void PlayDoubleJumpEffect(
         float direction)
@@ -55,9 +51,7 @@ public class PlayerEffectController : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버에서 윗점프 이펙트를 요청합니다.
-    /// </summary>
+    // 윗점프 이펙트 재생
     [Server]
     public void PlayUpJumpEffect()
     {
@@ -83,9 +77,6 @@ public class PlayerEffectController : NetworkBehaviour
         Vector3 position,
         bool flipX)
     {
-        /*
-         * 호스트는 서버 메서드에서 이미 재생했습니다.
-         */
         if (isServer)
             return;
 
@@ -108,9 +99,10 @@ public class PlayerEffectController : NetworkBehaviour
         );
     }
 
+    // 텔레포트 이펙트 재생
     [Server]
     public void PlayTeleportEffect(
-    float direction)
+        float direction)
     {
         bool flipX =
             direction > 0f;

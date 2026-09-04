@@ -35,10 +35,6 @@ public class MonsterHealthBarUI : MonoBehaviour
             monsterHealth.MaxHp
         );
 
-        /*
-         * 생성 직후에는 체력바를 숨깁니다.
-         * 스크립트가 붙은 몬스터 루트는 끄지 않습니다.
-         */
         SetHealthBarVisible(false);
     }
 
@@ -54,6 +50,7 @@ public class MonsterHealthBarUI : MonoBehaviour
             ShowHealthBar;
     }
 
+    // 피격 시 체력바 표시
     private void ShowHealthBar(
         DamageHitResult[] hitResults)
     {
@@ -63,21 +60,19 @@ public class MonsterHealthBarUI : MonoBehaviour
         SetHealthBarVisible(true);
     }
 
+    // 현재 체력 비율에 맞춰 게이지 갱신
     private void UpdateHealthBar(
         int currentHp,
         int maxHp)
     {
-        float ratio = maxHp > 0
-            ? (float)currentHp / maxHp
-            : 0f;
+        float ratio =
+            maxHp > 0
+                ? (float)currentHp / maxHp
+                : 0f;
 
         fillImage.fillAmount =
             Mathf.Clamp01(ratio);
 
-        /*
-         * HP가 0이 되면 사망 연출 중에는
-         * 체력바가 보이지 않도록 숨깁니다.
-         */
         if (currentHp <= 0)
         {
             SetHealthBarVisible(false);
@@ -90,6 +85,8 @@ public class MonsterHealthBarUI : MonoBehaviour
         if (hpGaugeRoot == null)
             return;
 
-        hpGaugeRoot.SetActive(visible);
+        hpGaugeRoot.SetActive(
+            visible
+        );
     }
 }

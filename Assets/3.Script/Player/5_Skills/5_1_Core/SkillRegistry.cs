@@ -4,31 +4,29 @@ using System.Collections.Generic;
 public static class SkillRegistry
 {
     private static readonly Dictionary<SkillId, Type>
-        skillTypes = new()
+    skillTypes = new()
+    {
         {
-            {
-                SkillId.Jump,
-                typeof(JumpSkill)
-            },
-            {
-                SkillId.BasicAttack,
-                typeof(BasicAttackSkill)
-            },
-            {
-                SkillId.AttackSkill1,
-                typeof(AttackSkill1)
-            },
-            {
-                SkillId.DashSkill,
-                typeof(DashSkill)
-            },
-
-            // 새로운 스킬 추가 예시
-            // {
-            //     SkillId.SlashBlast,
-            //     typeof(SlashBlastSkill)
-            // }
-        };
+            SkillId.Jump,
+            typeof(JumpSkill)
+        },
+        {
+            SkillId.BasicAttack,
+            typeof(BasicAttackSkill)
+        },
+        {
+            SkillId.AttackSkill1,
+            typeof(AttackSkill1)
+        },
+        {
+            SkillId.DashSkill,
+            typeof(DashSkill)
+        },
+        {
+            SkillId.PickupItem,
+            typeof(PickupSkill)
+        }
+    };
 
     public static bool TryGetSkillType(
         SkillId skillId,

@@ -12,8 +12,7 @@ public class OpenSkillUICommand :
             skillUI;
     }
 
-    public bool Execute(
-        Vector2 inputDirection)
+    public bool Execute()
     {
         if (skillUI == null)
             return false;

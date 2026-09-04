@@ -29,13 +29,10 @@ public class MapPortal : MonoBehaviour
         }
     }
 
+    // 서버에서 플레이어의 포탈 진입 처리
     private void OnTriggerEnter2D(
         Collider2D other)
     {
-        /*
-         * 포탈 접촉 여부는 서버 물리 공간에서
-         * 서버가 직접 판정합니다.
-         */
         if (!NetworkServer.active)
             return;
 
@@ -46,9 +43,12 @@ public class MapPortal : MonoBehaviour
         if (mapController == null)
             return;
 
-        mapController.EnterPortal(this);
+        mapController.EnterPortal(
+            this
+        );
     }
 
+    // 서버에서 플레이어의 포탈 이탈 처리
     private void OnTriggerExit2D(
         Collider2D other)
     {
@@ -62,6 +62,8 @@ public class MapPortal : MonoBehaviour
         if (mapController == null)
             return;
 
-        mapController.ExitPortal(this);
+        mapController.ExitPortal(
+            this
+        );
     }
 }

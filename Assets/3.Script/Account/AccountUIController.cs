@@ -74,9 +74,6 @@ public class AccountUIController : MonoBehaviour
             OnRegisterResponseReceived;
     }
 
-    /// <summary>
-    /// 로그인 버튼에서 호출합니다.
-    /// </summary>
     public void OnClickLogin()
     {
         AudioManager.Instance?.PlayEffect(
@@ -104,9 +101,6 @@ public class AccountUIController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 회원가입 화면을 엽니다.
-    /// </summary>
     public void OnClickOpenRegister()
     {
         AudioManager.Instance?.PlayEffect(
@@ -126,9 +120,6 @@ public class AccountUIController : MonoBehaviour
         nicknameInput.ActivateInputField();
     }
 
-    /// <summary>
-    /// 회원가입 버튼에서 호출합니다.
-    /// </summary>
     public void OnClickRegister()
     {
         AudioManager.Instance?.PlayEffect(
@@ -157,9 +148,6 @@ public class AccountUIController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 회원가입 화면에서 로그인 화면으로 돌아갑니다.
-    /// </summary>
     public void OnClickBackToLogin()
     {
         AudioManager.Instance?.PlayEffect(
@@ -172,9 +160,6 @@ public class AccountUIController : MonoBehaviour
         ShowLoginUI();
     }
 
-    /// <summary>
-    /// 끝내기 버튼에서 호출합니다.
-    /// </summary>
     public void OnClickExit()
     {
         AudioManager.Instance?.PlayEffect(
@@ -288,6 +273,7 @@ public class AccountUIController : MonoBehaviour
         }
     }
 
+    // 로그인 성공 후 계정 UI 종료
     private void HandleLoginSuccess(
         string nickname)
     {
@@ -301,19 +287,12 @@ public class AccountUIController : MonoBehaviour
             this
         );
 
-        /*
-         * LocalPlayerUIRoot는 플레이어 Authority에 따라
-         * 기존 시스템이 별도로 처리합니다.
-         */
         gameObject.SetActive(false);
     }
 
+    // 회원가입 완료 후 로그인 화면으로 복귀
     private void HandleRegisterSuccess()
     {
-        /*
-         * 재로그인이 편하도록 아이디는 유지합니다.
-         * 비밀번호와 닉네임만 초기화합니다.
-         */
         passwordInput.text =
             string.Empty;
 

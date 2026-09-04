@@ -36,12 +36,7 @@ public class PlayerHealth : NetworkBehaviour
     private PlayerMapController mapController;
     private SpriteRenderer spriteRenderer;
 
-    /*
-     * 서버에서만 사용하는 무적 판정입니다.
-     * 클라이언트에 동기화할 필요는 없습니다.
-     */
     private float invincibleUntil;
-
     private Coroutine blinkCoroutine;
 
     private Color originalColor;
@@ -93,10 +88,11 @@ public class PlayerHealth : NetworkBehaviour
         }
     }
 
+    // 데미지 적용 및 피격 반응 처리
     [Server]
     public void TakeDamage(
-    int damage,
-    Vector2 attackerPosition)
+        int damage,
+        Vector2 attackerPosition)
     {
         if (isDead)
             return;
@@ -107,10 +103,6 @@ public class PlayerHealth : NetworkBehaviour
         if (damage <= 0)
             return;
 
-        /*
-         * 현재 시각부터 지정 시간 동안 무적입니다.
-         * 코루틴이 중단되어 무적 상태가 영구히 남는 문제를 방지합니다.
-         */
         invincibleUntil =
             Time.time + invincibilityDuration;
 
@@ -132,7 +124,8 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     [Server]
-    public void Heal(int amount)
+    public void Heal(
+        int amount)
     {
         if (isDead)
             return;
@@ -146,6 +139,7 @@ public class PlayerHealth : NetworkBehaviour
         );
     }
 
+    // 피격 무적 시간 동안 블랙 아웃 효과 실행
     [ClientRpc]
     private void RpcPlayBlink()
     {
@@ -203,6 +197,7 @@ public class PlayerHealth : NetworkBehaviour
         Died?.Invoke();
     }
 
+    // 사망 상태에서 부활 맵 이동 요청
     [Command]
     public void CmdRequestRevive()
     {
@@ -212,6 +207,7 @@ public class PlayerHealth : NetworkBehaviour
         mapController.RequestReviveTransition();
     }
 
+    // 맵 이동 완료 후 체력 및 사망 상태 초기화
     [Server]
     public void CompleteRevive()
     {
@@ -220,10 +216,6 @@ public class PlayerHealth : NetworkBehaviour
 
         currentHp = maxHp;
         isDead = false;
-
-        /*
-         * 이전 맵에서 남아 있던 피격 무적 시간을 제거합니다.
-         */
         invincibleUntil = 0f;
     }
 
@@ -241,10 +233,6 @@ public class PlayerHealth : NetworkBehaviour
         bool previousState,
         bool newState)
     {
-        /*
-         * 서버에서는 Die()와 Revive()가 이미
-         * 이벤트를 발생시켰으므로 중복 호출하지 않습니다.
-         */
         if (isServer)
             return;
 

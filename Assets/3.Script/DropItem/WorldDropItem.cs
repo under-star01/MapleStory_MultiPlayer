@@ -48,9 +48,7 @@ public class WorldDropItem : NetworkBehaviour
         RefreshVisual();
     }
 
-    /// <summary>
-    /// 서버에서 드롭 아이템의 종류를 설정합니다.
-    /// </summary>
+    // 드롭 아이템 종류 설정
     [Server]
     public void Initialize(
         ConsumableId id)
@@ -61,10 +59,7 @@ public class WorldDropItem : NetworkBehaviour
         consumableId = id;
     }
 
-    /// <summary>
-    /// 서버에서 드롭 아이템을 인벤토리에 추가하고
-    /// 획득에 성공하면 월드 오브젝트를 제거합니다.
-    /// </summary>
+    // 아이템 획득 후 월드 오브젝트 제거
     [Server]
     public bool TryCollect(
         PlayerInventory inventory)
@@ -114,6 +109,7 @@ public class WorldDropItem : NetworkBehaviour
             data.Icon;
     }
 
+    // 일정 시간 후 드롭 아이템 제거
     [Server]
     private IEnumerator DestroyAfterDelay()
     {

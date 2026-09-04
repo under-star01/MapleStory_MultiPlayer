@@ -48,21 +48,8 @@ public class PlayerAnimController : NetworkBehaviour
 
     private AnimatorOverrideController overrideController;
 
-    /*
-     * 공격 판정, 실제 이동 등
-     * 스킬의 핵심 기능을 실행할 타이밍입니다.
-     */
     public event Action ActionExecuteFrame;
-
-    /*
-     * 스킬 이펙트를 실행할 타이밍입니다.
-     */
     public event Action ActionEffectFrame;
-
-    /*
-     * Animator가 Action State를
-     * 완전히 빠져나간 시점입니다.
-     */
     public event Action ActionEnded;
 
     private void Awake()
@@ -148,6 +135,7 @@ public class PlayerAnimController : NetworkBehaviour
         );
     }
 
+    // 액션 종류에 맞는 애니메이션 실행
     [Server]
     private void PlayAction(
         ActionAnimationType animationType)
@@ -168,14 +156,11 @@ public class PlayerAnimController : NetworkBehaviour
         );
     }
 
+    // 클라이언트의 액션 클립 및 효과음 동기화
     [ClientRpc]
     private void RpcSetActionClip(
         ActionAnimationType animationType)
     {
-        /*
-         * 호스트는 서버에서 이미
-         * 클립을 교체했습니다.
-         */
         if (!isServer)
         {
             SetActionClip(
@@ -250,13 +235,7 @@ public class PlayerAnimController : NetworkBehaviour
         ] = actionClip;
     }
 
-    /*
-     * Animation Event에서 호출됩니다.
-     *
-     * 공격 스킬에서는 공격 판정,
-     * 텔레포트에서는 실제 위치 이동을
-     * 담당합니다.
-     */
+    // Animation Event에서 액션 기능 실행
     public void OnActionExecuteFrame()
     {
         if (!isServer)
@@ -265,12 +244,7 @@ public class PlayerAnimController : NetworkBehaviour
         ActionExecuteFrame?.Invoke();
     }
 
-    /*
-     * Animation Event에서 호출됩니다.
-     *
-     * AttackSkill1, TeleportSkill 등의
-     * 이펙트 타이밍을 담당합니다.
-     */
+    // Animation Event에서 액션 이펙트 실행
     public void OnActionEffectFrame()
     {
         if (!isServer)
@@ -279,10 +253,7 @@ public class PlayerAnimController : NetworkBehaviour
         ActionEffectFrame?.Invoke();
     }
 
-    /*
-     * ActionStateBehaviour의
-     * OnStateExit에서 호출됩니다.
-     */
+    // Action State 종료 처리
     public void OnActionStateExited()
     {
         if (!isServer)
@@ -319,7 +290,7 @@ public class PlayerAnimController : NetworkBehaviour
 
     [Server]
     public void PlaySkillSound(
-    SkillSoundId soundId)
+        SkillSoundId soundId)
     {
         RpcPlaySkillSound(
             soundId

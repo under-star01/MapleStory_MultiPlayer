@@ -1,10 +1,8 @@
 public enum BasicActionId
 {
-    None,
+    None = 0,
 
-    OpenQuickSlotUI,
-    OpenSettingUI,
-    OpenInventoryUI,
-    OpenSkillUI,
-    PickupItem
+    OpenQuickSlotUI = 1,
+    OpenInventoryUI = 3,
+    OpenSkillUI = 4
 }

@@ -23,10 +23,7 @@ public class MapSceneManager : MonoBehaviour
 
     public bool AreServerMapsLoaded { get; private set; }
 
-    /// <summary>
-    /// 서버가 관리할 모든 맵 씬을
-    /// 독립된 2D 물리 공간과 함께 Additive로 로드합니다.
-    /// </summary>
+    // 서버의 모든 맵을 독립된 2D 물리 공간으로 Additive 로드
     public IEnumerator LoadAllServerMaps()
     {
         AreServerMapsLoaded = false;
@@ -153,13 +150,9 @@ public class MapSceneManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 클라이언트가 사용할 특정 맵 씬을
-    /// 일반 Additive 방식으로 로드합니다.
-    /// 클라이언트는 현재 맵 하나만 사용하므로
-    /// 별도의 로컬 물리 씬을 만들지 않습니다.
-    /// </summary>
-    public IEnumerator LoadClientMap(MapId mapId)
+    // 클라이언트에서 사용할 특정 맵을 Additive 로드
+    public IEnumerator LoadClientMap(
+        MapId mapId)
     {
         if (!TryGetSceneName(
                 mapId,
@@ -174,12 +167,10 @@ public class MapSceneManager : MonoBehaviour
         }
 
         Scene scene =
-            SceneManager.GetSceneByName(sceneName);
+            SceneManager.GetSceneByName(
+                sceneName
+            );
 
-        /*
-         * Host에서는 서버가 이미 맵을 로드했으므로
-         * 동일한 씬을 다시 로드하지 않습니다.
-         */
         if (!scene.isLoaded)
         {
             AsyncOperation operation =
@@ -218,16 +209,10 @@ public class MapSceneManager : MonoBehaviour
             yield break;
         }
 
-        /*
-         * 별도 클라이언트에서도 MapId로
-         * 로드된 맵 Scene을 조회할 수 있도록 등록합니다.
-         */
-        loadedScenes[mapId] = scene;
+        loadedScenes[mapId] =
+            scene;
     }
 
-    /// <summary>
-    /// 현재 프로세스에 로드된 특정 맵 Scene을 반환합니다.
-    /// </summary>
     public bool TryGetLoadedScene(
         MapId mapId,
         out Scene scene)
@@ -238,9 +223,7 @@ public class MapSceneManager : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 지정한 맵의 스폰 포인트를 찾습니다.
-    /// </summary>
+    // 지정한 맵의 스폰 위치 조회
     public Transform FindSpawnPoint(
         MapId mapId,
         string spawnId)
@@ -298,7 +281,8 @@ public class MapSceneManager : MonoBehaviour
         AreServerMapsLoaded = false;
     }
 
-    private bool IsValid(MapSceneEntry entry)
+    private bool IsValid(
+        MapSceneEntry entry)
     {
         if (entry == null)
             return false;
@@ -317,11 +301,9 @@ public class MapSceneManager : MonoBehaviour
         return false;
     }
 
-    /// <summary>
-    /// 클라이언트에서 사용이 끝난 맵 씬을 언로드합니다.
-    /// Host는 서버 맵을 유지해야 하므로 언로드하지 않습니다.
-    /// </summary>
-    public IEnumerator UnloadClientMap(MapId mapId)
+    // 별도 클라이언트에서 이전 맵 언로드
+    public IEnumerator UnloadClientMap(
+        MapId mapId)
     {
         if (NetworkServer.active)
             yield break;
@@ -334,23 +316,32 @@ public class MapSceneManager : MonoBehaviour
         }
 
         Scene scene =
-            SceneManager.GetSceneByName(sceneName);
+            SceneManager.GetSceneByName(
+                sceneName
+            );
 
         if (!scene.isLoaded)
         {
-            loadedScenes.Remove(mapId);
+            loadedScenes.Remove(
+                mapId
+            );
+
             yield break;
         }
 
         AsyncOperation operation =
-            SceneManager.UnloadSceneAsync(scene);
+            SceneManager.UnloadSceneAsync(
+                scene
+            );
 
         if (operation == null)
             yield break;
 
         yield return operation;
 
-        loadedScenes.Remove(mapId);
+        loadedScenes.Remove(
+            mapId
+        );
 
         Debug.Log(
             $"클라이언트 이전 맵 언로드 완료: " +

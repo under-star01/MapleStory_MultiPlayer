@@ -11,7 +11,7 @@ public class OpenQuickSlotSettingCommand :
         this.settingUI = settingUI;
     }
 
-    public bool Execute(Vector2 inputDirection)
+    public bool Execute()
     {
         if (settingUI == null)
             return false;

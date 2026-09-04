@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerAnimController))]
 [RequireComponent(typeof(PlayerEffectController))]
+[RequireComponent(typeof(PlayerInventory))]
 public class PlayerSkillController : MonoBehaviour
 {
     [Serializable]
@@ -24,6 +25,7 @@ public class PlayerSkillController : MonoBehaviour
     private PlayerMove playerMove;
     private PlayerAnimController playerAnim;
     private PlayerEffectController playerEffect;
+    private PlayerInventory inventory;
 
     private bool isActionExecuting;
 
@@ -41,6 +43,9 @@ public class PlayerSkillController : MonoBehaviour
         playerEffect =
             GetComponent<PlayerEffectController>();
 
+        inventory =
+            GetComponent<PlayerInventory>();
+
         LearnDefaultSkills();
     }
 
@@ -57,6 +62,7 @@ public class PlayerSkillController : MonoBehaviour
             playerAnim,
             playerEffect,
             this,
+            inventory,
             inputDirection
         );
 
@@ -64,13 +70,10 @@ public class PlayerSkillController : MonoBehaviour
             return false;
 
         skill.Execute(context);
+
         return true;
     }
 
-    /// <summary>
-    /// 아이콘 정보 없이 스킬을 획득합니다.
-    /// 기존 코드와의 호환을 위해 유지합니다.
-    /// </summary>
     public bool LearnSkill(
         SkillId skillId,
         out PlayerSkillBase learnedSkill)
@@ -82,10 +85,7 @@ public class PlayerSkillController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 스킬 ID에 해당하는 스킬을 생성하거나 재사용하고,
-    /// 전달받은 아이콘으로 초기화합니다.
-    /// </summary>
+    // 스킬 ID에 맞는 스킬을 생성하거나 기존 인스턴스를 재사용
     public bool LearnSkill(
         SkillId skillId,
         Sprite icon,
@@ -97,7 +97,6 @@ public class PlayerSkillController : MonoBehaviour
             return false;
         }
 
-        // 이미 배운 스킬이면 기존 인스턴스를 반환합니다.
         if (learnedSkills.TryGetValue(
                 skillId,
                 out learnedSkill))
@@ -131,7 +130,6 @@ public class PlayerSkillController : MonoBehaviour
             return false;
         }
 
-        // 이미 플레이어에게 붙어 있다면 재사용합니다.
         learnedSkill =
             GetComponent(skillType) as PlayerSkillBase;
 
@@ -163,9 +161,12 @@ public class PlayerSkillController : MonoBehaviour
         return true;
     }
 
-    public bool HasSkill(SkillId skillId)
+    public bool HasSkill(
+        SkillId skillId)
     {
-        return learnedSkills.ContainsKey(skillId);
+        return learnedSkills.ContainsKey(
+            skillId
+        );
     }
 
     public bool TryGetSkill(
@@ -178,6 +179,7 @@ public class PlayerSkillController : MonoBehaviour
         );
     }
 
+    // 인스펙터에 등록된 기본 스킬 획득
     private void LearnDefaultSkills()
     {
         foreach (DefaultSkillEntry entry in defaultSkills)
@@ -201,7 +203,8 @@ public class PlayerSkillController : MonoBehaviour
         }
     }
 
-    private bool IsNull(IPlayerSkill skill)
+    private bool IsNull(
+        IPlayerSkill skill)
     {
         if (skill == null)
             return true;
@@ -215,12 +218,14 @@ public class PlayerSkillController : MonoBehaviour
         return false;
     }
 
+    // 중복 액션 실행 방지
     public bool TryBeginAction()
     {
         if (isActionExecuting)
             return false;
 
         isActionExecuting = true;
+
         return true;
     }
 

@@ -21,15 +21,9 @@ public class MapPhysicsSimulator : MonoBehaviour
         }
     }
 
+    // 서버의 맵별 독립 PhysicsScene2D를 직접 시뮬레이션
     private void FixedUpdate()
     {
-        /*
-         * 별도 클라이언트는 기본 PhysicsScene2D를
-         * Unity가 자동으로 처리합니다.
-         *
-         * 서버에서 로드한 맵별 로컬 PhysicsScene2D만
-         * 직접 시뮬레이션합니다.
-         */
         if (!NetworkServer.active ||
             !physicsScene.IsValid())
         {

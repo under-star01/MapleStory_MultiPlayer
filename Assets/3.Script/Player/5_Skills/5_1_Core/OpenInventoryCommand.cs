@@ -12,8 +12,7 @@ public class OpenInventoryCommand :
             inventoryUI;
     }
 
-    public bool Execute(
-        Vector2 inputDirection)
+    public bool Execute()
     {
         if (inventoryUI == null)
             return false;

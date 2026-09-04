@@ -31,7 +31,8 @@ public class MonsterHealth : NetworkBehaviour
     private WorldDropItem worldDropItemPrefab;
 
     [SerializeField]
-    private Vector2 dropSpawnOffset = new Vector2(0f, 0.3f);
+    private Vector2 dropSpawnOffset =
+        new Vector2(0f, 0.3f);
 
     [SyncVar]
     private bool isDead;
@@ -45,17 +46,11 @@ public class MonsterHealth : NetworkBehaviour
     public bool IsDead => isDead;
 
     public event Action<int, int> HealthChanged;
-
-    /*
-     * 이후 DamageNumberController가 구독할 이벤트입니다.
-     * 배열 하나가 스킬 한 번의 데미지 묶음을 의미합니다.
-     */
     public event Action<DamageHitResult[]> DamageReceived;
-
     public event Action<MonsterHealth> DeathCompleted;
 
     private static readonly int HitHash =
-    Animator.StringToHash("Hit");
+        Animator.StringToHash("Hit");
 
     private static readonly int DieHash =
         Animator.StringToHash("Die");
@@ -81,8 +76,13 @@ public class MonsterHealth : NetworkBehaviour
 
         monsterCollider.enabled = true;
 
-        animator.ResetTrigger(HitHash);
-        animator.ResetTrigger(DieHash);
+        animator.ResetTrigger(
+            HitHash
+        );
+
+        animator.ResetTrigger(
+            DieHash
+        );
 
         animator.Rebind();
         animator.Update(0f);
@@ -99,7 +99,7 @@ public class MonsterHealth : NetworkBehaviour
     }
 
     public void ApplyMonsterId(
-    int value)
+        int value)
     {
         if (value <= 0)
             return;
@@ -107,15 +107,12 @@ public class MonsterHealth : NetworkBehaviour
         monsterId = value;
     }
 
-    /// <summary>
-    /// 계산된 모든 타격 데미지를 합산해
-    /// 몬스터 HP를 한 번만 감소시킵니다.
-    /// </summary>
+    // 타격 데미지를 합산해 HP 감소 및 피격 처리
     [Server]
     public void TakeDamage(
-    GameObject attacker,
-    int totalDamage,
-    DamageHitResult[] hitResults)
+        GameObject attacker,
+        int totalDamage,
+        DamageHitResult[] hitResults)
     {
         if (isDead)
             return;
@@ -129,10 +126,6 @@ public class MonsterHealth : NetworkBehaviour
             return;
         }
 
-        /*
-         * 자신을 공격한 플레이어를 기억하고
-         * 공격 모드로 전환합니다.
-         */
         if (attacker != null)
         {
             monsterMovement?.EnterAttackMode(
@@ -145,7 +138,9 @@ public class MonsterHealth : NetworkBehaviour
             0
         );
 
-        RpcNotifyDamage(hitResults);
+        RpcNotifyDamage(
+            hitResults
+        );
 
         if (currentHp <= 0)
         {
@@ -159,21 +154,17 @@ public class MonsterHealth : NetworkBehaviour
         RpcPlayHitAnimation();
     }
 
-    /*
-     * 기존 단일 데미지 호출과의 호환용입니다.
-     * 다른 코드에서 TakeDamage(int)를 사용해도
-     * 당장 오류가 발생하지 않게 유지합니다.
-     */
     [Server]
-    public void TakeDamage(int damage)
+    public void TakeDamage(
+        int damage)
     {
         DamageHitResult[] hitResults =
         {
-        new DamageHitResult(
-            damage,
-            false
-        )
-    };
+            new DamageHitResult(
+                damage,
+                false
+            )
+        };
 
         TakeDamage(
             null,
@@ -182,6 +173,7 @@ public class MonsterHealth : NetworkBehaviour
         );
     }
 
+    // 몬스터 사망 및 드롭 처리
     [Server]
     private void Die()
     {
@@ -192,7 +184,8 @@ public class MonsterHealth : NetworkBehaviour
 
         monsterMovement?.OnDeath();
 
-        monsterCollider.enabled = false;
+        monsterCollider.enabled =
+            false;
 
         SpawnDrops();
 
@@ -203,10 +196,7 @@ public class MonsterHealth : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 몬스터 데이터에 등록된 드롭 목록을 확인하고
-    /// 확률 판정에 성공한 소비 아이템을 생성합니다.
-    /// </summary>
+    // 등록된 드롭 데이터를 기준으로 확률 판정 후 아이템 생성
     [Server]
     private void SpawnDrops()
     {
@@ -289,7 +279,9 @@ public class MonsterHealth : NetworkBehaviour
         if (isDead)
             return;
 
-        animator.SetTrigger(HitHash);
+        animator.SetTrigger(
+            HitHash
+        );
     }
 
     [ClientRpc]
@@ -305,9 +297,7 @@ public class MonsterHealth : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버 Animator의 Hit 상태가 종료되었을 때 호출됩니다.
-    /// </summary>
+    // 피격 애니메이션 종료 후 이동 상태 복구
     public void OnHitAnimationEnded()
     {
         if (!isServer ||
@@ -322,8 +312,13 @@ public class MonsterHealth : NetworkBehaviour
     [ClientRpc]
     private void RpcPlayDieAnimation()
     {
-        animator.ResetTrigger(HitHash);
-        animator.SetTrigger(DieHash);
+        animator.ResetTrigger(
+            HitHash
+        );
+
+        animator.SetTrigger(
+            DieHash
+        );
 
         AudioManager.Instance?.PlayMonster(
             MonsterSoundId.Die
@@ -337,12 +332,14 @@ public class MonsterHealth : NetworkBehaviour
             deathAnimationDuration
         );
 
-        DeathCompleted?.Invoke(this);
+        DeathCompleted?.Invoke(
+            this
+        );
     }
 
     private void OnMaxHpChanged(
-    int previousMaxHp,
-    int newMaxHp)
+        int previousMaxHp,
+        int newMaxHp)
     {
         HealthChanged?.Invoke(
             currentHp,

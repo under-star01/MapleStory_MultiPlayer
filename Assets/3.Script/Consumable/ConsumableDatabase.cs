@@ -19,9 +19,7 @@ public class ConsumableDatabase : ScriptableObject
         Initialize();
     }
 
-    /// <summary>
-    /// 소비 아이템 ID에 해당하는 데이터를 조회합니다.
-    /// </summary>
+    // 소비 아이템 ID에 해당하는 데이터 조회
     public bool TryGetData(
         ConsumableId consumableId,
         out ConsumableData data)

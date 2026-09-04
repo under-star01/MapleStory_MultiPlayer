@@ -28,18 +28,14 @@ public class InventorySlotUI :
         Clear();
     }
 
-    /// <summary>
-    /// 클릭 결과를 전달할 인벤토리 UI를 연결합니다.
-    /// </summary>
+    // 클릭 이벤트를 전달할 인벤토리 UI 연결
     public void Initialize(
         InventoryUI owner)
     {
         inventoryUI = owner;
     }
 
-    /// <summary>
-    /// 슬롯에 소비 아이템 정보와 수량을 표시합니다.
-    /// </summary>
+    // 소비 아이템 아이콘과 수량 표시
     public void Refresh(
         ConsumableData data,
         int count)
@@ -70,9 +66,6 @@ public class InventorySlotUI :
         countText.gameObject.SetActive(true);
     }
 
-    /// <summary>
-    /// 슬롯을 빈 상태로 표시합니다.
-    /// </summary>
     public void Clear()
     {
         consumableId =
@@ -92,6 +85,7 @@ public class InventorySlotUI :
         countText.gameObject.SetActive(false);
     }
 
+    // 슬롯 클릭 시 해당 소비 아이템 사용 요청
     public void OnPointerClick(
         PointerEventData eventData)
     {

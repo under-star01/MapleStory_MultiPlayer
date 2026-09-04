@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,11 +7,7 @@ public class DefaultActionPaletteUI : MonoBehaviour
     [Serializable]
     private class DefaultActionEntry
     {
-        public QuickSlotBindingType type;
-
-        [Header("Action")]
-        public SkillId skillId;
-        public BasicActionId basicActionId;
+        public BasicActionId actionId;
         public Sprite icon;
 
         [Header("Default Binding")]
@@ -30,7 +25,7 @@ public class DefaultActionPaletteUI : MonoBehaviour
     [SerializeField]
     private SkillUI skillUI;
 
-    [Header("Initial Default Actions")]
+    [Header("Default Actions")]
     [SerializeField]
     private List<DefaultActionEntry>
         defaultActions = new();
@@ -38,131 +33,251 @@ public class DefaultActionPaletteUI : MonoBehaviour
     private readonly List<DefaultActionSlotUI>
         slots = new();
 
-    private readonly Dictionary<BasicActionId, IQuickSlotCommand>
-        commands = new();
+    private PlayerQuickSlotController
+        quickSlotController;
 
-    private PlayerQuickSlotController quickSlotController;
-    private Coroutine initializeCoroutine;
+    private PlayerBasicActionController
+        basicActionController;
 
     private void Awake()
     {
         CollectSlots();
     }
 
+    // 로컬 플레이어의 퀵슬롯 연결
     public void Bind(
         PlayerQuickSlotController controller)
     {
+        Unbind();
+
         if (controller == null)
+            return;
+
+        quickSlotController =
+            controller;
+
+        basicActionController =
+            controller.GetComponent
+                <PlayerBasicActionController>();
+
+        if (basicActionController == null)
         {
             Debug.LogError(
-                $"{nameof(PlayerQuickSlotController)}가 null입니다.",
-                this
+                $"{nameof(PlayerBasicActionController)}를 " +
+                "찾지 못했습니다.",
+                controller
             );
 
             return;
         }
 
-        if (quickSlotController == controller)
-            return;
-
-        Unbind();
-
-        quickSlotController = controller;
-
-        CreateCommands();
-
-        initializeCoroutine =
-            StartCoroutine(InitializeNextFrame());
+        RegisterActions();
+        ClearPalette();
     }
 
     public void Unbind()
     {
-        if (initializeCoroutine != null)
-        {
-            StopCoroutine(initializeCoroutine);
-            initializeCoroutine = null;
-        }
+        basicActionController?.Clear();
 
         quickSlotController = null;
+        basicActionController = null;
 
-        commands.Clear();
         ClearPalette();
     }
 
-    private IEnumerator InitializeNextFrame()
+    // 미등록 기본 행동을 기본 키 또는 팔레트에 배치
+    public void InitializePalette(
+        bool useDefaultBindings)
     {
-        yield return null;
+        ClearPalette();
 
-        initializeCoroutine = null;
-
-        if (quickSlotController != null)
+        if (quickSlotController == null ||
+            basicActionController == null)
         {
-            InitializePalette();
+            return;
         }
-    }
-
-    /// <summary>
-    /// 등록된 기본 제공 항목을 기본 키 또는 팔레트에 배치합니다.
-    /// </summary>
-    private void InitializePalette()
-    {
-        ClearPalette();
 
         foreach (DefaultActionEntry entry
                  in defaultActions)
         {
-            if (!TryCreateAction(
-                    entry,
-                    out QuickSlotBinding binding,
+            if (entry == null ||
+                entry.actionId ==
+                    BasicActionId.None)
+            {
+                continue;
+            }
+
+            if (!basicActionController.TryGetAction(
+                    entry.actionId,
                     out BasicActionData actionData))
             {
                 continue;
             }
 
-            /*
-             * 이미 퀵슬롯에 등록되어 있다면
-             * 팔레트에 중복으로 표시하지 않습니다.
-             */
-            if (IsBound(binding))
+            if (IsBound(entry.actionId))
                 continue;
 
-            if (entry.useDefaultBinding &&
+            if (useDefaultBindings &&
+                entry.useDefaultBinding &&
                 quickSlotController.IsSlotEmpty(
                     entry.defaultKey) &&
-                BindToKey(
+                quickSlotController.BindBasicAction(
                     entry.defaultKey,
-                    binding,
-                    actionData))
+                    entry.actionId))
             {
                 continue;
             }
 
-            RestoreAction(
-                binding,
+            AddToPalette(
                 actionData
             );
         }
     }
 
-    /// <summary>
-    /// 퀵슬롯에서 제거된 기본 제공 항목을
-    /// 팔레트의 첫 번째 빈 슬롯에 복구합니다.
-    ///
-    /// Default Actions에 등록되지 않은 일반 스킬은
-    /// 복구하지 않습니다.
-    /// </summary>
+    // 퀵슬롯에서 제거된 기본 행동을 팔레트에 복원
     public bool RestoreAction(
-        QuickSlotBinding binding,
-        BasicActionData actionData = null)
+        QuickSlotBinding binding)
     {
-        DefaultActionEntry entry =
-            FindEntry(binding);
-
-        if (entry == null ||
-            Contains(binding))
+        if (binding.Type !=
+            QuickSlotBindingType.BasicAction)
         {
             return false;
         }
+
+        BasicActionId actionId =
+            binding.BasicActionId;
+
+        if (actionId ==
+                BasicActionId.None ||
+            IsBound(actionId) ||
+            Contains(actionId))
+        {
+            return false;
+        }
+
+        if (!TryGetBasicActionData(
+                actionId,
+                out BasicActionData actionData))
+        {
+            return false;
+        }
+
+        return AddToPalette(
+            actionData
+        );
+    }
+
+    public bool TryGetBasicActionData(
+        BasicActionId actionId,
+        out BasicActionData actionData)
+    {
+        actionData = null;
+
+        if (basicActionController == null)
+            return false;
+
+        return basicActionController.TryGetAction(
+            actionId,
+            out actionData
+        );
+    }
+
+    // 기본 행동 데이터와 Command 등록
+    private void RegisterActions()
+    {
+        basicActionController.Clear();
+
+        foreach (DefaultActionEntry entry
+                 in defaultActions)
+        {
+            if (!TryCreateActionData(
+                    entry,
+                    out BasicActionData actionData))
+            {
+                continue;
+            }
+
+            if (!basicActionController.Register(
+                    actionData))
+            {
+                Debug.LogWarning(
+                    $"BasicAction 등록 실패: " +
+                    $"{entry.actionId}",
+                    this
+                );
+            }
+        }
+    }
+
+    private bool TryCreateActionData(
+        DefaultActionEntry entry,
+        out BasicActionData actionData)
+    {
+        actionData = null;
+
+        if (entry == null ||
+            entry.actionId ==
+                BasicActionId.None ||
+            entry.icon == null)
+        {
+            return false;
+        }
+
+        IQuickSlotCommand command =
+            CreateCommand(
+                entry.actionId
+            );
+
+        if (command == null)
+        {
+            Debug.LogWarning(
+                $"Command를 생성할 수 없습니다: " +
+                $"{entry.actionId}",
+                this
+            );
+
+            return false;
+        }
+
+        actionData =
+            new BasicActionData(
+                entry.actionId,
+                entry.icon,
+                command
+            );
+
+        return true;
+    }
+
+    private IQuickSlotCommand CreateCommand(
+        BasicActionId actionId)
+    {
+        return actionId switch
+        {
+            BasicActionId.OpenQuickSlotUI =>
+                new OpenQuickSlotSettingCommand(
+                    quickSlotSettingUI
+                ),
+
+            BasicActionId.OpenInventoryUI =>
+                new OpenInventoryCommand(
+                    inventoryUI
+                ),
+
+            BasicActionId.OpenSkillUI =>
+                new OpenSkillUICommand(
+                    skillUI
+                ),
+
+            _ => null
+        };
+    }
+
+    private bool AddToPalette(
+        BasicActionData actionData)
+    {
+        if (actionData == null)
+            return false;
 
         foreach (DefaultActionSlotUI slot
                  in slots)
@@ -170,238 +285,66 @@ public class DefaultActionPaletteUI : MonoBehaviour
             if (!slot.IsEmpty)
                 continue;
 
-            switch (binding.Type)
-            {
-                case QuickSlotBindingType.Skill:
-                    if (!quickSlotController.TryGetSkillIcon(
-                            binding.SkillId,
-                            out Sprite skillIcon))
-                    {
-                        return false;
-                    }
+            slot.SetBasicAction(
+                actionData.ActionId,
+                actionData.Icon,
+                quickSlotSettingUI
+            );
 
-                    slot.SetSkill(
-                        binding.SkillId,
-                        skillIcon,
-                        quickSlotSettingUI
-                    );
-
-                    return true;
-
-                case QuickSlotBindingType.BasicAction:
-                    if (actionData == null)
-                        return false;
-
-                    slot.SetBasicAction(
-                        actionData,
-                        quickSlotSettingUI
-                    );
-
-                    return true;
-
-                default:
-                    return false;
-            }
+            return true;
         }
 
         Debug.LogWarning(
-            $"DefaultActionPalette에 빈 슬롯이 없습니다: " +
-            $"{binding.Type}",
+            $"BasicAction을 배치할 빈 팔레트 슬롯이 없습니다: " +
+            $"{actionData.ActionId}",
             this
         );
 
         return false;
     }
 
-    /// <summary>
-    /// Inspector에 등록된 항목을
-    /// 실제 바인딩 데이터로 변환합니다.
-    /// </summary>
-    private bool TryCreateAction(
-        DefaultActionEntry entry,
-        out QuickSlotBinding binding,
-        out BasicActionData actionData)
+    private bool IsBound(
+        BasicActionId actionId)
     {
-        binding =
-            QuickSlotBinding.Empty();
-
-        actionData = null;
-
-        if (entry == null)
+        if (quickSlotController == null)
             return false;
 
-        switch (entry.type)
+        foreach (QuickKey key in
+                 Enum.GetValues(typeof(QuickKey)))
         {
-            case QuickSlotBindingType.Skill:
-                if (entry.skillId == SkillId.None ||
-                    !quickSlotController.TryGetSkillIcon(
-                        entry.skillId,
-                        out _))
-                {
-                    return false;
-                }
-
-                binding =
-                    QuickSlotBinding.FromSkill(
-                        entry.skillId,
-                        QuickSlotBindingSource.DefaultActionPalette
-                    );
-
-                return true;
-
-            case QuickSlotBindingType.BasicAction:
-                if (entry.basicActionId ==
-                        BasicActionId.None ||
-                    entry.icon == null ||
-                    !commands.TryGetValue(
-                        entry.basicActionId,
-                        out IQuickSlotCommand command))
-                {
-                    return false;
-                }
-
-                binding =
-                    QuickSlotBinding.FromBasicAction(
-                        entry.basicActionId
-                    );
-
-                actionData =
-                    new BasicActionData(
-                        entry.basicActionId,
-                        entry.icon,
-                        command
-                    );
-
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
-    private bool BindToKey(
-        QuickKey key,
-        QuickSlotBinding binding,
-        BasicActionData actionData)
-    {
-        switch (binding.Type)
-        {
-            case QuickSlotBindingType.Skill:
-                return quickSlotController.BindSkill(
+            if (!quickSlotController.TryGetBinding(
                     key,
-                    binding.SkillId,
-                    binding.Source
-                );
-
-            case QuickSlotBindingType.BasicAction:
-                return quickSlotController.BindBasicAction(
-                    key,
-                    actionData
-                );
-
-            default:
-                return false;
-        }
-    }
-
-    /// <summary>
-    /// Default Actions에 등록된 항목인지 확인합니다.
-    /// </summary>
-    private DefaultActionEntry FindEntry(
-        QuickSlotBinding binding)
-    {
-        foreach (DefaultActionEntry entry
-                 in defaultActions)
-        {
-            if (entry == null ||
-                entry.type != binding.Type)
+                    out QuickSlotBinding binding))
             {
                 continue;
             }
 
-            switch (binding.Type)
+            if (binding.Type ==
+                    QuickSlotBindingType.BasicAction &&
+                binding.BasicActionId ==
+                    actionId)
             {
-                case QuickSlotBindingType.Skill:
-                    if (entry.skillId ==
-                        binding.SkillId)
-                    {
-                        return entry;
-                    }
-
-                    break;
-
-                case QuickSlotBindingType.BasicAction:
-                    if (entry.basicActionId ==
-                        binding.BasicActionId)
-                    {
-                        return entry;
-                    }
-
-                    break;
+                return true;
             }
         }
 
-        return null;
+        return false;
     }
 
     private bool Contains(
-        QuickSlotBinding target)
+        BasicActionId actionId)
     {
         foreach (DefaultActionSlotUI slot
                  in slots)
         {
             if (!slot.IsEmpty &&
-                IsSameBinding(
-                    slot.Binding,
-                    target))
+                slot.ActionId == actionId)
             {
                 return true;
             }
         }
 
         return false;
-    }
-
-    private bool IsBound(
-        QuickSlotBinding target)
-    {
-        foreach (QuickKey key in
-                 Enum.GetValues(typeof(QuickKey)))
-        {
-            if (quickSlotController.TryGetBinding(
-                    key,
-                    out QuickSlotBinding binding) &&
-                IsSameBinding(
-                    binding,
-                    target))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsSameBinding(
-        QuickSlotBinding left,
-        QuickSlotBinding right)
-    {
-        if (left.Type != right.Type)
-            return false;
-
-        switch (left.Type)
-        {
-            case QuickSlotBindingType.Skill:
-                return left.SkillId ==
-                       right.SkillId;
-
-            case QuickSlotBindingType.BasicAction:
-                return left.BasicActionId ==
-                       right.BasicActionId;
-
-            default:
-                return false;
-        }
     }
 
     private void CollectSlots()
@@ -414,16 +357,16 @@ public class DefaultActionPaletteUI : MonoBehaviour
 
         Array.Sort(
             foundSlots,
-            (left, right) =>
-                left.transform
-                    .GetSiblingIndex()
+            (a, b) =>
+                a.transform.GetSiblingIndex()
                     .CompareTo(
-                        right.transform
-                            .GetSiblingIndex()
+                        b.transform.GetSiblingIndex()
                     )
         );
 
-        slots.AddRange(foundSlots);
+        slots.AddRange(
+            foundSlots
+        );
     }
 
     private void ClearPalette()
@@ -433,88 +376,5 @@ public class DefaultActionPaletteUI : MonoBehaviour
         {
             slot.Clear();
         }
-    }
-
-    private void CreateCommands()
-    {
-        commands.Clear();
-
-        if (quickSlotSettingUI != null)
-        {
-            commands.Add(
-                BasicActionId.OpenQuickSlotUI,
-                new OpenQuickSlotSettingCommand(
-                    quickSlotSettingUI
-                )
-            );
-        }
-
-        if (inventoryUI != null)
-        {
-            commands.Add(
-                BasicActionId.OpenInventoryUI,
-                new OpenInventoryCommand(
-                    inventoryUI
-                )
-            );
-        }
-
-        if (skillUI != null)
-        {
-            commands.Add(
-                BasicActionId.OpenSkillUI,
-                new OpenSkillUICommand(
-                    skillUI
-                )
-            );
-        }
-
-        PlayerInventory inventory =
-        quickSlotController.GetComponent
-            <PlayerInventory>();
-
-        if (inventory != null)
-        {
-            commands.Add(
-                BasicActionId.PickupItem,
-                new PickupItemCommand(
-                    inventory
-                )
-            );
-        }
-    }
-
-    public bool TryGetBasicActionData(
-    BasicActionId actionId,
-    out BasicActionData actionData)
-    {
-        actionData = null;
-
-        foreach (DefaultActionEntry entry
-                 in defaultActions)
-        {
-            if (entry == null ||
-                entry.type !=
-                    QuickSlotBindingType.BasicAction ||
-                entry.basicActionId != actionId ||
-                entry.icon == null ||
-                !commands.TryGetValue(
-                    actionId,
-                    out IQuickSlotCommand command))
-            {
-                continue;
-            }
-
-            actionData =
-                new BasicActionData(
-                    actionId,
-                    entry.icon,
-                    command
-                );
-
-            return true;
-        }
-
-        return false;
     }
 }

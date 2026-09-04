@@ -19,17 +19,9 @@ public class PlayerInventory : NetworkBehaviour
     [SerializeField]
     private ConsumableDatabase consumableDatabase;
 
-    /*
-     * 서버가 실제 수량을 관리하고,
-     * 변경 결과가 클라이언트에 동기화됩니다.
-     */
     private readonly SyncDictionary<ConsumableId, int>
         consumables = new();
 
-    /*
-     * 마지막 DB 저장 이후
-     * 인벤토리 변경 사항이 있는지 나타냅니다.
-     */
     private bool hasUnsavedChanges;
 
     public bool HasUnsavedChanges =>
@@ -42,16 +34,9 @@ public class PlayerInventory : NetworkBehaviour
 
     private ContactFilter2D pickupFilter;
 
-    /// <summary>
-    /// 특정 소비 아이템의 수량이 변경될 때 발생합니다.
-    /// ItemId와 변경된 수량을 전달합니다.
-    /// </summary>
     public event Action<ConsumableId, int>
         ConsumableChanged;
 
-    /// <summary>
-    /// 인벤토리 전체 UI를 갱신할 때 사용할 수 있습니다.
-    /// </summary>
     public event Action InventoryChanged;
 
     private void Awake()
@@ -75,10 +60,7 @@ public class PlayerInventory : NetworkBehaviour
         consumables.OnChange +=
             OnConsumablesChanged;
 
-        /*
-         * 최초 동기화된 기존 아이템도
-         * UI에 표시할 수 있도록 알립니다.
-         */
+        // 최초 동기화된 인벤토리 상태를 UI에 반영
         foreach (var pair in consumables)
         {
             ConsumableChanged?.Invoke(
@@ -98,13 +80,7 @@ public class PlayerInventory : NetworkBehaviour
         base.OnStopClient();
     }
 
-    /// <summary>
-    /// DB에서 조회한 인벤토리 데이터를
-    /// 서버 인벤토리에 적용합니다.
-    ///
-    /// 플레이어를 NetworkServer에 등록하기 전에
-    /// 호출해야 최초 상태가 클라이언트에 동기화됩니다.
-    /// </summary>
+    // DB 인벤토리 데이터를 검증 후 서버 인벤토리에 적용
     [Server]
     public bool ApplyLoadedConsumables(
         IReadOnlyCollection<PlayerInventoryRecord> records)
@@ -119,13 +95,6 @@ public class PlayerInventory : NetworkBehaviour
             return false;
         }
 
-        /*
-         * 기존 인벤토리를 바로 지우지 않고,
-         * 모든 DB 데이터를 먼저 검증합니다.
-         *
-         * 잘못된 행이 하나라도 있다면
-         * 기존 상태를 건드리지 않습니다.
-         */
         Dictionary<ConsumableId, int>
             validatedConsumables = new();
 
@@ -223,10 +192,6 @@ public class PlayerInventory : NetworkBehaviour
             );
         }
 
-        /*
-         * DB에서 정상적으로 읽어온 직후이므로
-         * 아직 저장할 변경 사항은 없습니다.
-         */
         hasUnsavedChanges = false;
 
         Debug.Log(
@@ -238,10 +203,7 @@ public class PlayerInventory : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 현재 서버 인벤토리를
-    /// DB 저장용 데이터로 복사합니다.
-    /// </summary>
+    // 현재 인벤토리를 DB 저장용 데이터로 변환
     [Server]
     public List<PlayerInventoryRecord>
         CreateSaveSnapshot()
@@ -268,19 +230,12 @@ public class PlayerInventory : NetworkBehaviour
         return records;
     }
 
-    /// <summary>
-    /// 현재 인벤토리가 DB에 정상적으로
-    /// 저장되었음을 기록합니다.
-    /// </summary>
     [Server]
     public void MarkSaved()
     {
         hasUnsavedChanges = false;
     }
 
-    /// <summary>
-    /// 현재 보유한 소비 아이템 수량을 반환합니다.
-    /// </summary>
     public int GetConsumableCount(
         ConsumableId consumableId)
     {
@@ -297,9 +252,6 @@ public class PlayerInventory : NetworkBehaviour
                 : 0;
     }
 
-    /// <summary>
-    /// 지정한 수량 이상 보유했는지 확인합니다.
-    /// </summary>
     public bool HasConsumable(
         ConsumableId consumableId,
         int amount = 1)
@@ -312,10 +264,7 @@ public class PlayerInventory : NetworkBehaviour
         ) >= amount;
     }
 
-    /// <summary>
-    /// 서버에서 소비 아이템을 인벤토리에 추가합니다.
-    /// 드롭 아이템 획득 시 호출합니다.
-    /// </summary>
+    // 소비 아이템 추가
     [Server]
     public bool TryAddConsumable(
         ConsumableId consumableId,
@@ -346,10 +295,6 @@ public class PlayerInventory : NetworkBehaviour
                 itemRecord.MaxStack
             );
 
-        /*
-         * 이미 최대 수량이라면
-         * 아이템을 더 획득하지 못합니다.
-         */
         if (newCount == currentCount)
             return false;
 
@@ -361,9 +306,7 @@ public class PlayerInventory : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 서버에서 소비 아이템 수량을 감소시킵니다.
-    /// </summary>
+    // 소비 아이템 수량 감소
     [Server]
     public bool TryRemoveConsumable(
         ConsumableId consumableId,
@@ -406,10 +349,7 @@ public class PlayerInventory : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 서버에서 물약 사용 가능 여부를 검사하고
-    /// 체력 회복과 수량 차감을 처리합니다.
-    /// </summary>
+    // 소비 아이템 사용 및 회복 처리
     [Server]
     public bool TryUseConsumable(
         ConsumableId consumableId)
@@ -483,10 +423,6 @@ public class PlayerInventory : NetworkBehaviour
         ConsumableId consumableId,
         int newCount)
     {
-        /*
-         * Remove 시 전달되는 값은 기본값일 수 있으므로
-         * 실제 Dictionary의 최종 수량을 다시 조회합니다.
-         */
         int currentCount =
             GetConsumableCount(
                 consumableId
@@ -500,21 +436,9 @@ public class PlayerInventory : NetworkBehaviour
         InventoryChanged?.Invoke();
     }
 
-    /// <summary>
-    /// 로컬 플레이어가 주변 드롭 아이템의
-    /// 획득을 서버에 요청합니다.
-    /// </summary>
-    public bool RequestPickup()
-    {
-        if (!isOwned)
-            return false;
-
-        CmdPickupNearestItem();
-        return true;
-    }
-
-    [Command]
-    private void CmdPickupNearestItem()
+    // 주변에서 가장 가까운 드롭 아이템 획득
+    [Server]
+    public bool TryPickupNearestItem()
     {
         PhysicsScene2D physicsScene =
             gameObject.scene.GetPhysicsScene2D();
@@ -527,7 +451,7 @@ public class PlayerInventory : NetworkBehaviour
                 this
             );
 
-            return;
+            return false;
         }
 
         pickupHits.Clear();
@@ -540,6 +464,7 @@ public class PlayerInventory : NetworkBehaviour
         );
 
         WorldDropItem nearestDrop = null;
+
         float nearestSqrDistance =
             float.MaxValue;
 
@@ -559,8 +484,11 @@ public class PlayerInventory : NetworkBehaviour
                  (Vector2)transform.position)
                 .sqrMagnitude;
 
-            if (sqrDistance >= nearestSqrDistance)
+            if (sqrDistance >=
+                nearestSqrDistance)
+            {
                 continue;
+            }
 
             nearestSqrDistance =
                 sqrDistance;
@@ -570,21 +498,23 @@ public class PlayerInventory : NetworkBehaviour
         }
 
         if (nearestDrop == null)
-            return;
+            return false;
 
-        if (nearestDrop.TryCollect(this))
-        {
-            TargetPlayEffectSound(
-                connectionToClient,
-                EffectSoundId.PickUp
-            );
-        }
+        if (!nearestDrop.TryCollect(this))
+            return false;
+
+        TargetPlayEffectSound(
+            connectionToClient,
+            EffectSoundId.PickUp
+        );
+
+        return true;
     }
 
     [Server]
     private bool TryGetItemRecord(
-    ConsumableId consumableId,
-    out ItemRecord record)
+        ConsumableId consumableId,
+        out ItemRecord record)
     {
         record = null;
 

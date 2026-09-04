@@ -13,7 +13,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         [Header("Spawn")]
         [Min(1)]
         public int monsterId;
-        
+
         public MonsterHealth monsterPrefab;
         public Transform spawnPoint;
 
@@ -48,27 +48,16 @@ public class MonsterSpawnManager : NetworkBehaviour
     {
         base.OnStartServer();
 
-        /*
-         * 맵이 로드되더라도 플레이어가 없으면
-         * 몬스터를 생성하지 않습니다.
-         */
         playerCount = 0;
         isMapActive = false;
     }
 
-    /// <summary>
-    /// 서버에서 플레이어가 이 맵에 들어왔을 때 호출합니다.
-    /// 첫 번째 플레이어라면 몬스터들을 활성화합니다.
-    /// </summary>
+    // 첫 번째 플레이어 입장 시 맵의 몬스터 활성화
     [Server]
     public void OnPlayerEnteredMap()
     {
         playerCount++;
 
-        /*
-         * 빈 맵 비활성화 대기 중이었다면
-         * 몬스터 반환을 취소합니다.
-         */
         if (deactivateCoroutine != null)
         {
             StopCoroutine(
@@ -84,10 +73,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// 서버에서 플레이어가 이 맵을 떠났을 때 호출합니다.
-    /// 마지막 플레이어가 나가면 비활성화 대기를 시작합니다.
-    /// </summary>
+    // 마지막 플레이어 퇴장 시 몬스터 비활성화 대기 시작
     [Server]
     public void OnPlayerExitedMap()
     {
@@ -109,10 +95,7 @@ public class MonsterSpawnManager : NetworkBehaviour
             );
     }
 
-    /// <summary>
-    /// 맵의 모든 생성 지점을 활성화합니다.
-    /// 최초라면 생성하고, 기존 인스턴스가 있으면 재사용합니다.
-    /// </summary>
+    // 맵의 모든 몬스터 생성 또는 재사용
     [Server]
     private void ActivateMonsters()
     {
@@ -143,9 +126,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// 몬스터 인스턴스를 최초로 생성합니다.
-    /// </summary>
+    // 몬스터 인스턴스 최초 생성
     [Server]
     private void CreateMonster(
         SpawnEntry entry)
@@ -154,11 +135,11 @@ public class MonsterSpawnManager : NetworkBehaviour
             return;
 
         MonsterHealth monster =
-    Instantiate(
-        entry.monsterPrefab,
-        entry.spawnPoint.position,
-        entry.spawnPoint.rotation
-    );
+            Instantiate(
+                entry.monsterPrefab,
+                entry.spawnPoint.position,
+                entry.spawnPoint.rotation
+            );
 
         SceneManager.MoveGameObjectToScene(
             monster.gameObject,
@@ -169,7 +150,10 @@ public class MonsterSpawnManager : NetworkBehaviour
                 entry.monsterId,
                 monster))
         {
-            Destroy(monster.gameObject);
+            Destroy(
+                monster.gameObject
+            );
+
             return;
         }
 
@@ -186,6 +170,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         entry.isSpawned = true;
     }
 
+    // DB의 몬스터 데이터를 생성된 인스턴스에 적용
     private bool TryApplyMonsterData(
         int monsterId,
         MonsterHealth monsterHealth)
@@ -266,9 +251,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 풀에 보관된 몬스터를 원래 생성 위치에서 다시 등장시킵니다.
-    /// </summary>
+    // 풀에 보관된 몬스터 재등장
     [Server]
     private void SpawnMonster(
         SpawnEntry entry)
@@ -299,10 +282,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         entry.isSpawned = true;
     }
 
-    /// <summary>
-    /// 사망 애니메이션이 끝난 몬스터를 풀 상태로 전환하고
-    /// 맵이 활성 상태라면 리스폰 대기를 시작합니다.
-    /// </summary>
+    // 사망 완료 후 몬스터 반환 및 리스폰 대기
     [Server]
     private void OnMonsterDeathCompleted(
         MonsterHealth monster)
@@ -318,10 +298,6 @@ public class MonsterSpawnManager : NetworkBehaviour
 
         UnSpawnMonster(entry);
 
-        /*
-         * 맵이 비활성 상태이거나 플레이어가 없다면
-         * 리스폰 타이머를 시작하지 않습니다.
-         */
         if (!isMapActive ||
             playerCount <= 0)
         {
@@ -351,10 +327,6 @@ public class MonsterSpawnManager : NetworkBehaviour
 
         entry.respawnCoroutine = null;
 
-        /*
-         * 기다리는 동안 맵이 비활성화되었다면
-         * 몬스터를 다시 등장시키지 않습니다.
-         */
         if (!isMapActive ||
             playerCount <= 0)
         {
@@ -364,10 +336,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         SpawnMonster(entry);
     }
 
-    /// <summary>
-    /// 마지막 플레이어가 나간 뒤 일정 시간 동안
-    /// 아무도 들어오지 않으면 몬스터를 비활성화합니다.
-    /// </summary>
+    // 일정 시간 동안 빈 맵이면 몬스터 비활성화
     [Server]
     private IEnumerator DeactivateAfterDelay()
     {
@@ -383,10 +352,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         DeactivateMonsters();
     }
 
-    /// <summary>
-    /// 맵의 모든 몬스터와 리스폰 작업을 정리합니다.
-    /// 다음 입장 시 모든 몬스터는 초기 상태로 재등장합니다.
-    /// </summary>
+    // 맵의 모든 몬스터와 리스폰 작업 정리
     [Server]
     private void DeactivateMonsters()
     {
@@ -416,10 +382,7 @@ public class MonsterSpawnManager : NetworkBehaviour
         }
     }
 
-    /// <summary>
-    /// 네트워크에서 몬스터를 제거하고
-    /// 서버 풀 상태로 보관합니다.
-    /// </summary>
+    // 네트워크에서 제거 후 서버 풀 상태로 보관
     [Server]
     private void UnSpawnMonster(
         SpawnEntry entry)

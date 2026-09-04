@@ -70,7 +70,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource effectSource;
     [SerializeField] private AudioSource playerSource;
-    [SerializeField] private AudioSource otherPlayerSource; 
+    [SerializeField] private AudioSource otherPlayerSource;
     [SerializeField] private AudioSource monsterSource;
 
     [Header("Audio Clips")]
@@ -78,7 +78,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioClip[] effectClips;
     [SerializeField] private AudioClip[] skillClips;
     [SerializeField] private AudioClip[] monsterClips;
-    
+
     public float BgmVolume =>
         bgmSource != null
             ? bgmSource.volume
@@ -144,7 +144,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        // 같은 BGM이면 처음부터 다시 재생하지 않습니다.
+        // 같은 BGM은 재시작하지 않음
         if (bgmSource.clip == clip &&
             bgmSource.isPlaying)
         {
@@ -172,11 +172,7 @@ public class AudioManager : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 플레이어 행동 효과음을 재생합니다.
-    /// 자신의 행동과 다른 플레이어의 행동을
-    /// 서로 다른 AudioSource로 구분합니다.
-    /// </summary>
+    // 자신의 스킬과 다른 플레이어의 스킬 효과음을 분리 재생
     public void PlaySkill(
         SkillSoundId soundId,
         bool isLocalPlayer)
@@ -262,7 +258,7 @@ public class AudioManager : MonoBehaviour
     }
 
     public void SetMonsterVolume(
-    float volume)
+        float volume)
     {
         SetVolume(
             monsterSource,
@@ -299,7 +295,7 @@ public class AudioManager : MonoBehaviour
         );
     }
 
-    // 이전 실행에서 저장한 로컬 볼륨을 불러옵니다.
+    // 저장된 볼륨 설정 적용
     private void LoadVolumes()
     {
         SetSourceVolume(
@@ -354,6 +350,7 @@ public class AudioManager : MonoBehaviour
         source.loop = loop;
     }
 
+    // 볼륨 적용 후 로컬 설정에 저장
     private static void SetVolume(
         AudioSource source,
         string saveKey,
@@ -387,7 +384,7 @@ public class AudioManager : MonoBehaviour
             Mathf.Clamp01(volume);
     }
 
-    // enum 값을 AudioClip 배열 인덱스로 사용합니다.
+    // enum 값을 AudioClip 배열 인덱스로 사용
     private static bool TryGetClip(
         AudioClip[] clips,
         int index,

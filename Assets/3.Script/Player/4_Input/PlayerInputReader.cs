@@ -58,10 +58,8 @@ public class PlayerInputReader : NetworkBehaviour
         CreateQuickKeyLookup();
     }
 
-    /// <summary>
-    /// 이 클라이언트가 해당 플레이어의 권한을 받았을 때
-    /// 로컬 입력을 활성화합니다.
-    /// </summary>
+    // 로컬 권한 획득 시 플레이어 상태 이벤트 연결 및
+    // 입력 활성화 상태 갱신
     public override void OnStartAuthority()
     {
         base.OnStartAuthority();
@@ -78,10 +76,8 @@ public class PlayerInputReader : NetworkBehaviour
         RefreshInputState();
     }
 
-    /// <summary>
-    /// 플레이어에 대한 권한을 잃었을 때
-    /// 입력과 이벤트 연결을 해제합니다.
-    /// </summary>
+    // 로컬 권한 해제 시 상태 이벤트 및
+    // 입력 연결 정리
     public override void OnStopAuthority()
     {
         playerHealth.Died -=
@@ -102,10 +98,8 @@ public class PlayerInputReader : NetworkBehaviour
         DisableInputs();
     }
 
-    /// <summary>
-    /// 맵 전환 등으로 로컬 플레이어 입력을
-    /// 일시적으로 차단하거나 다시 허용합니다.
-    /// </summary>
+    // 맵 전환 등 일시적으로 입력을 막아야 하는 상황의
+    // 입력 차단 상태 설정
     public void SetInputBlocked(
         bool blocked)
     {
@@ -133,10 +127,8 @@ public class PlayerInputReader : NetworkBehaviour
         bool isUpPressed =
             moveInput.y > 0.5f;
 
-        /*
-         * 위 방향 입력이 눌리는 순간에만
-         * 한 번 포탈 사용을 요청합니다.
-         */
+        // 위 방향 입력이 처음 눌린 순간에만
+        // 포탈 사용 요청
         if (isUpPressed &&
             !wasUpPressed)
         {
@@ -159,10 +151,8 @@ public class PlayerInputReader : NetworkBehaviour
         CmdSetMoveInput(0f);
     }
 
-    /// <summary>
-    /// 입력된 키의 퀵슬롯 바인딩을 확인하고
-    /// 종류에 맞는 실행 경로로 전달합니다.
-    /// </summary>
+    // 입력된 InputAction을 QuickKey로 변환한 뒤
+    // 퀵슬롯 Binding 타입에 맞는 실행 경로로 전달
     private void OnQuickKeyPerformed(
         InputAction.CallbackContext context)
     {
@@ -193,11 +183,9 @@ public class PlayerInputReader : NetworkBehaviour
                 break;
 
             case QuickSlotBindingType.BasicAction:
-                quickSlotController
-                    .ExecuteBasicAction(
-                        key,
-                        moveInput
-                    );
+                quickSlotController.ExecuteBasicAction(
+                    key
+                );
                 break;
         }
     }
@@ -227,6 +215,8 @@ public class PlayerInputReader : NetworkBehaviour
         wasUpPressed =
             false;
 
+        // 입력 비활성화 시 서버에 남아 있을 수 있는
+        // 이동 입력값 초기화
         if (isOwned &&
             NetworkClient.active)
         {
@@ -300,6 +290,8 @@ public class PlayerInputReader : NetworkBehaviour
         }
     }
 
+    // Inspector에 설정된 InputAction과 QuickKey를
+    // 런타임 조회용 Dictionary로 변환
     private void CreateQuickKeyLookup()
     {
         quickKeyByAction.Clear();
@@ -332,6 +324,7 @@ public class PlayerInputReader : NetworkBehaviour
         return binding?.action?.action != null;
     }
 
+    // 이동 입력을 서버에 전달
     [Command]
     private void CmdSetMoveInput(
         float input)
@@ -341,12 +334,15 @@ public class PlayerInputReader : NetworkBehaviour
         );
     }
 
+    // 포탈 사용 요청을 서버에 전달
     [Command]
     private void CmdRequestUsePortal()
     {
         mapController.RequestUsePortal();
     }
 
+    // 스킬 실행 요청과 실행 순간의 방향 입력을
+    // 서버에 전달
     [Command]
     private void CmdExecuteSkill(
         SkillId skillId,
@@ -372,6 +368,7 @@ public class PlayerInputReader : NetworkBehaviour
         );
     }
 
+    // 소비 아이템 사용 요청을 서버에 전달
     [Command]
     private void CmdExecuteConsumable(
         ConsumableId consumableId)
@@ -381,6 +378,8 @@ public class PlayerInputReader : NetworkBehaviour
         );
     }
 
+    // 소유권, 오브젝트 활성화, 입력 차단, 사망 상태를 기준으로
+    // 최종 입력 활성화 여부 결정
     private void RefreshInputState()
     {
         if (isOwned &&

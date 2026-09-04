@@ -10,19 +10,14 @@ public class DefaultActionSlotUI :
     private Image iconImage;
     private QuickSlotSettingUI settingUI;
 
-    private QuickSlotBinding binding =
-        QuickSlotBinding.Empty();
-
-    private BasicActionData basicActionData;
+    private BasicActionId actionId =
+        BasicActionId.None;
 
     public bool IsEmpty =>
-        binding.IsEmpty;
+        actionId == BasicActionId.None;
 
-    public QuickSlotBinding Binding =>
-        binding;
-
-    public BasicActionData BasicActionData =>
-        basicActionData;
+    public BasicActionId ActionId =>
+        actionId;
 
     private void Awake()
     {
@@ -32,15 +27,14 @@ public class DefaultActionSlotUI :
         Clear();
     }
 
-    /// <summary>
-    /// 기본 제공 스킬을 슬롯에 표시합니다.
-    /// </summary>
-    public void SetSkill(
-        SkillId skillId,
+    // BasicAction 정보와 아이콘 설정
+    public void SetBasicAction(
+        BasicActionId newActionId,
         Sprite icon,
         QuickSlotSettingUI owner)
     {
-        if (skillId == SkillId.None ||
+        if (newActionId ==
+                BasicActionId.None ||
             icon == null ||
             owner == null)
         {
@@ -48,14 +42,11 @@ public class DefaultActionSlotUI :
             return;
         }
 
-        binding =
-            QuickSlotBinding.FromSkill(
-                skillId,
-                QuickSlotBindingSource.DefaultActionPalette
-            );
+        actionId =
+            newActionId;
 
-        basicActionData = null;
-        settingUI = owner;
+        settingUI =
+            owner;
 
         SetIcon(
             icon,
@@ -63,47 +54,11 @@ public class DefaultActionSlotUI :
         );
     }
 
-    /// <summary>
-    /// 기본 기능을 슬롯에 표시합니다.
-    /// </summary>
-    public void SetBasicAction(
-        BasicActionData actionData,
-        QuickSlotSettingUI owner)
-    {
-        if (actionData == null ||
-            actionData.ActionId ==
-                BasicActionId.None ||
-            actionData.Icon == null ||
-            actionData.Command == null ||
-            owner == null)
-        {
-            Clear();
-            return;
-        }
-
-        binding =
-            QuickSlotBinding.FromBasicAction(
-                actionData.ActionId
-            );
-
-        basicActionData =
-            actionData;
-
-        settingUI =
-            owner;
-
-        SetIcon(
-            actionData.Icon,
-            true
-        );
-    }
-
     public void Clear()
     {
-        binding =
-            QuickSlotBinding.Empty();
+        actionId =
+            BasicActionId.None;
 
-        basicActionData = null;
         settingUI = null;
 
         if (iconImage == null)
@@ -118,10 +73,7 @@ public class DefaultActionSlotUI :
         );
     }
 
-    /// <summary>
-    /// 아이콘을 집고 있는 동안
-    /// 원래 팔레트 슬롯의 표시를 숨깁니다.
-    /// </summary>
+    // 아이콘 선택 중 원본 팔레트 아이콘 숨김 처리
     public void SetIconVisible(
         bool visible)
     {
@@ -147,14 +99,16 @@ public class DefaultActionSlotUI :
         if (eventData.button !=
                 PointerEventData.InputButton.Left ||
             IsEmpty ||
-            settingUI == null)
+            settingUI == null ||
+            iconImage == null ||
+            iconImage.sprite == null)
         {
             return;
         }
 
         settingUI.PickDefaultAction(
-            binding,
-            basicActionData,
+            actionId,
+            iconImage.sprite,
             this
         );
     }

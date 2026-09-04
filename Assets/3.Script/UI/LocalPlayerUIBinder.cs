@@ -25,10 +25,7 @@ public class LocalPlayerUIBinder : NetworkBehaviour
         UnbindPlayerUI();
     }
 
-    /// <summary>
-    /// 로컬 플레이어의 Context를 생성하고
-    /// 씬의 플레이어 UI Root에 전달합니다.
-    /// </summary>
+    // 로컬 플레이어 Context를 생성해 UI Root에 연결
     private void BindPlayerUI()
     {
         if (uiRoot != null)
@@ -53,12 +50,12 @@ public class LocalPlayerUIBinder : NetworkBehaviour
         playerContext =
             new LocalPlayerContext(gameObject);
 
-        uiRoot.Bind(playerContext);
+        uiRoot.Bind(
+            playerContext
+        );
     }
 
-    /// <summary>
-    /// 현재 플레이어와 연결된 UI를 해제합니다.
-    /// </summary>
+    // 현재 플레이어와 연결된 UI 해제
     private void UnbindPlayerUI()
     {
         if (uiRoot != null)

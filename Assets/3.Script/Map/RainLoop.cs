@@ -33,7 +33,7 @@ public class RainLoop : MonoBehaviour
 
             if (position.y < bottomY)
             {
-                // 초과해서 내려간 거리까지 유지하며 위로 순환시킵니다.
+                // 초과해서 내려간 거리까지 유지해서 이동
                 position.y += loopHeight;
             }
 

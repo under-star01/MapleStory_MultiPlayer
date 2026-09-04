@@ -30,22 +30,14 @@ public class QuickKeySlotUI :
         }
     }
 
-    /// <summary>
-    /// 이 슬롯이 클릭 결과를 전달할
-    /// 단축키 설정 UI를 연결합니다.
-    /// </summary>
+    // 클릭 이벤트를 전달할 퀵슬롯 설정 UI 연결
     public void Initialize(
         QuickSlotSettingUI quickSlotSettingUI)
     {
         settingUI = quickSlotSettingUI;
     }
 
-    /// <summary>
-    /// 현재 키에 등록된 기능의 아이콘을 표시합니다.
-    ///
-    /// hideIcon이 true이면 아이콘을 집고 있는 동안
-    /// 원래 슬롯의 표시만 잠시 숨깁니다.
-    /// </summary>
+    // 현재 바인딩된 아이콘 표시
     public void Refresh(
         Sprite icon,
         bool hideIcon = false)
@@ -63,9 +55,6 @@ public class QuickKeySlotUI :
         }
     }
 
-    /// <summary>
-    /// 슬롯을 빈 상태로 표시합니다.
-    /// </summary>
     public void Clear()
     {
         iconImage.sprite = null;
@@ -101,11 +90,17 @@ public class QuickKeySlotUI :
         settingUI.OnKeySlotClicked(quickKey);
     }
 
-    private void SetIconAlpha(float alpha)
+    private void SetIconAlpha(
+        float alpha)
     {
-        Color color = iconImage.color;
-        color.a = alpha;
-        iconImage.color = color;
+        Color color =
+            iconImage.color;
+
+        color.a =
+            alpha;
+
+        iconImage.color =
+            color;
     }
 
 #if UNITY_EDITOR

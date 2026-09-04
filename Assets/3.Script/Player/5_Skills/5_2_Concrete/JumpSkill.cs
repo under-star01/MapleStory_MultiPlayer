@@ -58,10 +58,7 @@ public class JumpSkill : PlayerSkillBase
         Vector2 input =
             context.InputDirection;
 
-        /*
-         * 위쪽 입력을 가장 먼저 확인합니다.
-         * 위 + 좌우를 함께 눌러도 윗점프로 처리됩니다.
-         */
+        // 위쪽 입력을 우선 확인
         if (input.y > UpInputThreshold)
         {
             ExecuteUpJump(context);
@@ -120,10 +117,7 @@ public class JumpSkill : PlayerSkillBase
             );
         }
 
-        /*
-         * 좌우 입력이 없다면
-         * 현재 바라보는 방향으로 더블 점프합니다.
-         */
+        // 입력이 없을 경우 바라보는 방향으로 실행
         return context.FacingDirection.x;
     }
 

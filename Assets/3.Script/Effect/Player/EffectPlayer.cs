@@ -30,13 +30,7 @@ public class EffectPlayer : MonoBehaviour
         spriteRenderer =
             GetComponent<SpriteRenderer>();
 
-        /*
-         * EffectPlayer 인스턴스마다 독립적인
-         * OverrideController를 생성합니다.
-         *
-         * 여러 이펙트가 동시에 재생될 때 서로의
-         * 클립을 덮어쓰지 않도록 하기 위함입니다.
-         */
+        // 각 이펙트가 독립적인 OverrideController 사용
         overrideController =
             new AnimatorOverrideController(
                 animator.runtimeAnimatorController
@@ -54,6 +48,7 @@ public class EffectPlayer : MonoBehaviour
         ownerPool = pool;
     }
 
+    // 이펙트 데이터에 맞춰 위치와 애니메이션 설정 후 재생
     public void Play(
         EffectData effectData,
         Vector3 position,
@@ -77,9 +72,6 @@ public class EffectPlayer : MonoBehaviour
         Vector2 offset =
             effectData.PositionOffset;
 
-        /*
-         * 좌우 방향에 따라 X 위치 보정값도 반전합니다.
-         */
         if (flipX)
         {
             offset.x *= -1f;
@@ -122,6 +114,7 @@ public class EffectPlayer : MonoBehaviour
             );
     }
 
+    // 애니메이션 종료 후 풀에 반환
     private IEnumerator ReturnAfterAnimation(
         float duration)
     {

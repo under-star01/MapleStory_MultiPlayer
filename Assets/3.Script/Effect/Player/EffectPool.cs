@@ -30,10 +30,6 @@ public class EffectPool : MonoBehaviour
     private readonly Queue<EffectPlayer>
         availablePlayers = new();
 
-    /*
-     * 같은 EffectPlayer가 실수로 두 번 반환되는 것을
-     * 방지하기 위한 확인용 컬렉션입니다.
-     */
     private readonly HashSet<EffectPlayer>
         availablePlayerSet = new();
 
@@ -48,16 +44,8 @@ public class EffectPool : MonoBehaviour
 
         Instance = this;
 
-        /*
-         * 맵 씬이 변경되어도 클라이언트의
-         * 공용 이펙트 풀은 유지합니다.
-         */
         DontDestroyOnLoad(gameObject);
 
-        /*
-         * Dedicated Server에서는 화면 이펙트가
-         * 필요하지 않으므로 풀을 생성하지 않습니다.
-         */
         if (Application.isBatchMode)
             return;
 
@@ -65,10 +53,7 @@ public class EffectPool : MonoBehaviour
         CreateInitialPool();
     }
 
-    /// <summary>
-    /// 등록된 EffectData를 EffectId로
-    /// 빠르게 조회할 수 있도록 Dictionary를 생성합니다.
-    /// </summary>
+    // EffectId로 빠르게 조회할 수 있는 데이터 테이블 생성
     private void CreateEffectDataLookup()
     {
         effectDataById.Clear();
@@ -105,10 +90,7 @@ public class EffectPool : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 시작 시 사용할 EffectPlayer를
-    /// 미리 생성합니다.
-    /// </summary>
+    // 시작 시 EffectPlayer 미리 생성
     private void CreateInitialPool()
     {
         if (effectPlayerPrefab == null)
@@ -135,9 +117,7 @@ public class EffectPool : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 지정한 이펙트를 원하는 위치와 방향으로 재생합니다.
-    /// </summary>
+    // 지정한 이펙트를 원하는 위치와 방향으로 재생
     public EffectPlayer Play(
         EffectId effectId,
         Vector3 position,
@@ -181,10 +161,6 @@ public class EffectPool : MonoBehaviour
         return effectPlayer;
     }
 
-    /// <summary>
-    /// 재생 가능한 EffectPlayer를 가져옵니다.
-    /// 풀이 비어 있으면 설정에 따라 추가 생성합니다.
-    /// </summary>
     private EffectPlayer GetAvailablePlayer()
     {
         while (availablePlayers.Count > 0)
@@ -208,9 +184,6 @@ public class EffectPool : MonoBehaviour
         return CreateEffectPlayer();
     }
 
-    /// <summary>
-    /// 새로운 공통 EffectPlayer 인스턴스를 생성합니다.
-    /// </summary>
     private EffectPlayer CreateEffectPlayer()
     {
         EffectPlayer effectPlayer =
@@ -228,20 +201,13 @@ public class EffectPool : MonoBehaviour
         return effectPlayer;
     }
 
-    /// <summary>
-    /// 재생이 끝난 EffectPlayer를
-    /// 다시 사용 가능한 상태로 반환합니다.
-    /// </summary>
+    // 재생이 끝난 EffectPlayer를 풀에 반환
     public void Return(
         EffectPlayer effectPlayer)
     {
         if (effectPlayer == null)
             return;
 
-        /*
-         * 이미 풀에 들어 있는 EffectPlayer가
-         * 중복으로 Queue에 추가되는 것을 방지합니다.
-         */
         if (availablePlayerSet.Contains(
                 effectPlayer))
         {

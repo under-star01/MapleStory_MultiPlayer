@@ -64,10 +64,8 @@ public class BasicAttackSkill : AttackSkillBase
         bool isGrounded =
             context.Move.IsGrounded;
 
-        /*
-         * 지상 공격에서는 수평 이동을 정지하고,
-         * 공중 공격에서는 기존 수평 관성을 유지합니다.
-         */
+        // 지상 공격: 수평 이동을 정지
+        // 공중 공격: 기존 수평 관성을 유지
         context.Move.SetMovementEnabled(
             enabled: false,
             stopHorizontalMovement: isGrounded
@@ -94,11 +92,7 @@ public class BasicAttackSkill : AttackSkillBase
             return;
         }
 
-        /*
-         * 애니메이션 이벤트가 중복 호출되더라도
-         * 한 번의 일반 공격에서는 한 번만 판정합니다.
-         */
-
+        // 중복 공격 판정 방지
         hasAppliedHit = true;
 
         ApplyAreaDamage(

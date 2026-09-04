@@ -6,4 +6,5 @@ public enum SkillId
     BasicAttack = 1001,
     AttackSkill1 = 1002,
     DashSkill = 1003,
+    PickupItem = 1004
 }

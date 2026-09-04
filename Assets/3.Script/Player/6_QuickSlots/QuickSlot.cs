@@ -5,49 +5,35 @@ public class QuickSlot
     public QuickSlotBinding Binding { get; private set; }
         = QuickSlotBinding.Empty();
 
-    public BasicActionData BasicActionData
-    {
-        get;
-        private set;
-    }
-
     public bool IsEmpty =>
         Binding.IsEmpty;
 
     public void BindSkill(
-        SkillId skillId,
-        QuickSlotBindingSource source)
+        SkillId skillId)
     {
-        QuickSlotBinding binding =
+        QuickSlotBinding newBinding =
             QuickSlotBinding.FromSkill(
-                skillId,
-                source
+                skillId
             );
 
-        if (binding.IsEmpty)
+        if (newBinding.IsEmpty)
             return;
 
-        Binding = binding;
-        BasicActionData = null;
+        Binding = newBinding;
     }
 
     public void BindBasicAction(
-        BasicActionData actionData)
+        BasicActionId actionId)
     {
-        if (actionData == null ||
-            actionData.ActionId == BasicActionId.None ||
-            actionData.Command == null)
-        {
-            return;
-        }
-
-        Binding =
+        QuickSlotBinding newBinding =
             QuickSlotBinding.FromBasicAction(
-                actionData.ActionId
+                actionId
             );
 
-        BasicActionData =
-            actionData;
+        if (newBinding.IsEmpty)
+            return;
+
+        Binding = newBinding;
     }
 
     public void BindConsumable(
@@ -62,30 +48,12 @@ public class QuickSlot
             return;
 
         Binding = binding;
-        BasicActionData = null;
-    }
-
-    public bool ExecuteBasicAction(
-        Vector2 inputDirection)
-    {
-        if (Binding.Type !=
-                QuickSlotBindingType.BasicAction ||
-            BasicActionData?.Command == null)
-        {
-            return false;
-        }
-
-        return BasicActionData.Command.Execute(
-            inputDirection
-        );
     }
 
     public void Clear()
     {
         Binding =
             QuickSlotBinding.Empty();
-
-        BasicActionData = null;
     }
 
     public void SwapWith(
@@ -99,8 +67,5 @@ public class QuickSlot
 
         (Binding, other.Binding) =
             (other.Binding, Binding);
-
-        (BasicActionData, other.BasicActionData) =
-            (other.BasicActionData, BasicActionData);
     }
 }

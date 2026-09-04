@@ -21,9 +21,6 @@ public class MapTransitionUI : MonoBehaviour
         SetAlpha(0f);
     }
 
-    /// <summary>
-    /// 화면을 완전히 검게 가립니다.
-    /// </summary>
     public IEnumerator FadeOut()
     {
         yield return Fade(
@@ -33,9 +30,6 @@ public class MapTransitionUI : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 검은 화면을 서서히 해제합니다.
-    /// </summary>
     public IEnumerator FadeIn()
     {
         yield return Fade(
@@ -45,6 +39,7 @@ public class MapTransitionUI : MonoBehaviour
         );
     }
 
+    // 지정한 시간 동안 화면 투명도 전환
     private IEnumerator Fade(
         float startAlpha,
         float targetAlpha,
@@ -60,7 +55,8 @@ public class MapTransitionUI : MonoBehaviour
 
         while (elapsed < duration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed +=
+                Time.unscaledDeltaTime;
 
             float ratio =
                 Mathf.Clamp01(
@@ -78,12 +74,16 @@ public class MapTransitionUI : MonoBehaviour
             yield return null;
         }
 
-        SetAlpha(targetAlpha);
+        SetAlpha(
+            targetAlpha
+        );
     }
 
-    private void SetAlpha(float alpha)
+    private void SetAlpha(
+        float alpha)
     {
-        canvasGroup.alpha = alpha;
+        canvasGroup.alpha =
+            alpha;
 
         bool isVisible =
             alpha > 0f;

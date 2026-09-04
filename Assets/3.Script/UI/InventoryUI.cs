@@ -37,8 +37,8 @@ public class InventoryUI :
         canvasGroup =
             GetComponent<CanvasGroup>();
 
-        CollectSlots(); 
-        
+        CollectSlots();
+
         SetWindowVisible(
             startOpened,
             false
@@ -56,9 +56,7 @@ public class InventoryUI :
         UnsubscribeInventory();
     }
 
-    /// <summary>
-    /// 현재 클라이언트의 로컬 플레이어를 연결합니다.
-    /// </summary>
+    // 로컬 플레이어의 인벤토리 연결
     public void Bind(
         LocalPlayerContext context)
     {
@@ -98,9 +96,6 @@ public class InventoryUI :
         RefreshAllSlots();
     }
 
-    /// <summary>
-    /// 현재 플레이어와 연결된 이벤트와 참조를 정리합니다.
-    /// </summary>
     public void Unbind()
     {
         UnsubscribeInventory();
@@ -110,10 +105,7 @@ public class InventoryUI :
         ClearAllSlots();
     }
 
-    /// <summary>
-    /// 인벤토리 슬롯에서 소비 아이템을 클릭했을 때 호출합니다.
-    /// 퀵슬롯 설정 창이 열려 있을 때만 아이템을 집을 수 있습니다.
-    /// </summary>
+    // 퀵슬롯 설정 중 소비 아이템 선택
     public void OnConsumableClicked(
         ConsumableId consumableId)
     {
@@ -159,10 +151,7 @@ public class InventoryUI :
         }
     }
 
-    /// <summary>
-    /// 현재 보유 중인 소비 아이템을
-    /// 앞쪽 슬롯부터 차례대로 표시합니다.
-    /// </summary>
+    // 보유 중인 소비 아이템을 앞쪽 슬롯부터 표시
     public void RefreshAllSlots()
     {
         ClearAllSlots();
@@ -231,6 +220,7 @@ public class InventoryUI :
         isInventorySubscribed = false;
     }
 
+    // 인벤토리 슬롯 수집 및 초기화
     private void CollectSlots()
     {
         slots.Clear();

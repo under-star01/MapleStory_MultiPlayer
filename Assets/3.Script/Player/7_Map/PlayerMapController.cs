@@ -13,30 +13,23 @@ public class PlayerMapController : NetworkBehaviour
     [SyncVar]
     private MapId currentMapId;
 
-    /*
-     * 접촉 중인 포탈은 서버 판정에만 사용하므로
-     * SyncVar로 동기화하지 않습니다.
-     */
     private MapPortal currentPortal;
 
     public MapId CurrentMapId => currentMapId;
 
-    /// <summary>
-    /// 서버가 플레이어의 현재 맵을 설정합니다.
-    /// </summary>
+    // 플레이어의 현재 맵 설정
     [Server]
-    public void SetCurrentMap(MapId mapId)
+    public void SetCurrentMap(
+        MapId mapId)
     {
         currentMapId = mapId;
         currentPortal = null;
     }
 
-    /// <summary>
-    /// 서버에서 플레이어가 포탈 영역에
-    /// 진입했음을 기록합니다.
-    /// </summary>
+    // 접촉 중인 포탈 등록
     [Server]
-    public void EnterPortal(MapPortal portal)
+    public void EnterPortal(
+        MapPortal portal)
     {
         if (portal == null)
             return;
@@ -52,17 +45,11 @@ public class PlayerMapController : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버에서 플레이어가 포탈 영역을
-    /// 벗어났음을 처리합니다.
-    /// </summary>
+    // 접촉이 끝난 포탈 정보 제거
     [Server]
-    public void ExitPortal(MapPortal portal)
+    public void ExitPortal(
+        MapPortal portal)
     {
-        /*
-         * 다른 포탈에 이미 진입한 상태라면
-         * 이전 포탈의 Exit가 현재 값을 지우지 않도록 합니다.
-         */
         if (currentPortal != portal)
             return;
 
@@ -74,10 +61,7 @@ public class PlayerMapController : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버에서 현재 접촉 중인 포탈의
-    /// 사용 가능 여부를 확인합니다.
-    /// </summary>
+    // 현재 접촉 중인 포탈 사용 요청
     [Server]
     public void RequestUsePortal()
     {
@@ -91,10 +75,6 @@ public class PlayerMapController : NetworkBehaviour
             return;
         }
 
-        /*
-         * 다른 물리 씬의 포탈이 잘못 기록되는 상황을
-         * 방지하는 기본 검증입니다.
-         */
         if (currentPortal.gameObject.scene !=
             gameObject.scene)
         {
@@ -127,7 +107,9 @@ public class PlayerMapController : NetworkBehaviour
             return;
         }
 
-        TargetPlayPortalSound(connectionToClient);
+        TargetPlayPortalSound(
+            connectionToClient
+        );
 
         mapNetworkManager.RequestMapTransition(
             connectionToClient,
@@ -136,9 +118,7 @@ public class PlayerMapController : NetworkBehaviour
         );
     }
 
-    /// <summary>
-    /// 사망한 플레이어를 마을 부활 위치로 이동시킵니다.
-    /// </summary>
+    // 사망한 플레이어를 부활 맵으로 이동
     [Server]
     public bool RequestReviveTransition()
     {
@@ -153,13 +133,11 @@ public class PlayerMapController : NetworkBehaviour
             return false;
         }
 
-        /*
-         * 사망한 위치에서 접촉 중이던 포탈 정보는
-         * 더 이상 사용하지 않습니다.
-         */
         currentPortal = null;
 
-        TargetPlayPortalSound(connectionToClient);
+        TargetPlayPortalSound(
+            connectionToClient
+        );
 
         mapNetworkManager.RequestMapTransition(
             connectionToClient,

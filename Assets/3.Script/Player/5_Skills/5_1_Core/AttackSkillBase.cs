@@ -27,10 +27,8 @@ public abstract class AttackSkillBase :
             };
     }
 
-    /// <summary>
-    /// 전달받은 공격 설정을 기준으로 범위 안의 몬스터에게
-    /// 최대 대상 수만큼 피해를 적용합니다.
-    /// </summary>
+    // 공격 설정을 기준으로 범위 안의 몬스터에게
+    // 최대 대상 수만큼 피해 적용
     [Server]
     protected int ApplyAreaDamage(
         SkillContext context,

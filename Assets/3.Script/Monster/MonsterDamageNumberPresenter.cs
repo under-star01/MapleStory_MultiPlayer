@@ -41,6 +41,7 @@ public class MonsterDamageNumberPresenter : MonoBehaviour
             ShowDamageNumbers;
     }
 
+    // 받은 피해 결과를 데미지 숫자로 표시
     private void ShowDamageNumbers(
         DamageHitResult[] hitResults)
     {
@@ -60,10 +61,6 @@ public class MonsterDamageNumberPresenter : MonoBehaviour
             return;
         }
 
-        /*
-         * 몬스터가 이후 사망하여 제거되어도
-         * Manager에는 현재 월드 좌표가 값으로 전달됩니다.
-         */
         manager.ShowDamageSequence(
             damageNumberPoint.position,
             hitResults

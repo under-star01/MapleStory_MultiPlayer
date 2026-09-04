@@ -69,7 +69,9 @@ public class MapNetworkManager : NetworkManager
             );
 
         loadMapsCoroutine =
-            StartCoroutine(InitializeServerMaps());
+            StartCoroutine(
+                InitializeServerMaps()
+            );
     }
 
     public override void OnStopServer()
@@ -140,17 +142,21 @@ public class MapNetworkManager : NetworkManager
     public override void OnServerDisconnect(
         NetworkConnectionToClient conn)
     {
-        /*
-         * 플레이어가 제거되기 전에 저장에 필요한
-         * UserId와 스냅샷을 확보합니다.
-         */
+        // 플레이어 제거 전에 저장용 스냅샷 확보
         if (conn?.identity != null)
         {
             GameObject player =
                 conn.identity.gameObject;
 
-            _ = SaveInventoryAsync(player, false);
-            _ = SaveQuickSlotsAsync(player, false);
+            _ = SaveInventoryAsync(
+                player,
+                false
+            );
+
+            _ = SaveQuickSlotsAsync(
+                player,
+                false
+            );
         }
 
         initialPlayerEntryController.RemoveConnection(conn);
@@ -173,6 +179,7 @@ public class MapNetworkManager : NetworkManager
         base.OnServerDisconnect(conn);
     }
 
+    // DB 초기화 후 서버에서 사용할 모든 맵 로드
     private IEnumerator InitializeServerMaps()
     {
         DatabaseManager databaseManager =
@@ -222,10 +229,13 @@ public class MapNetworkManager : NetworkManager
         LoadTransitionMapMessage message)
     {
         StartCoroutine(
-            BeginClientMapTransition(message.MapId)
+            BeginClientMapTransition(
+                message.MapId
+            )
         );
     }
 
+    // 입력 차단 후 목적지 클라이언트 맵 로드
     private IEnumerator BeginClientMapTransition(
         MapId mapId)
     {
@@ -245,11 +255,12 @@ public class MapNetworkManager : NetworkManager
             yield break;
         }
 
-        // 맵 전환 동안 플레이어 입력을 차단합니다.
         inputReader.SetInputBlocked(true);
 
         yield return mapTransitionUI.FadeOut();
-        yield return mapSceneManager.LoadClientMap(mapId);
+        yield return mapSceneManager.LoadClientMap(
+            mapId
+        );
 
         if (!IsClientMapLoaded(
                 mapId,
@@ -275,6 +286,7 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    // 목적지 맵 로드 요청 시작
     [Server]
     public void RequestMapTransition(
         NetworkConnectionToClient conn,
@@ -341,6 +353,7 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    // 클라이언트 로드 완료 후 서버 플레이어를 목적지 씬으로 이동
     private async void OnServerTransitionMapLoaded(
         NetworkConnectionToClient conn,
         TransitionMapLoadedMessage message)
@@ -437,12 +450,10 @@ public class MapNetworkManager : NetworkManager
         MapId previousMapId =
             mapController.CurrentMapId;
 
-        NotifyPlayerExitedMap(previousMapId);
+        NotifyPlayerExitedMap(
+            previousMapId
+        );
 
-        /*
-         * 플레이어를 목적지의 독립 PhysicsScene2D로
-         * 이동한 뒤 현재 맵 정보를 변경합니다.
-         */
         SceneManager.MoveGameObjectToScene(
             player,
             targetScene
@@ -460,9 +471,16 @@ public class MapNetworkManager : NetworkManager
             transition.TargetMapId
         );
 
-        // 입력이 차단된 맵 전환 구간에서 변경 데이터를 저장합니다.
-        await SaveInventoryAsync(player, true);
-        await SaveQuickSlotsAsync(player, true);
+        // 맵 전환 구간에서 변경된 플레이어 데이터 저장
+        await SaveInventoryAsync(
+            player,
+            true
+        );
+
+        await SaveQuickSlotsAsync(
+            player,
+            true
+        );
 
         if (!IsConnectionActive(conn) ||
             conn.identity == null)
@@ -483,7 +501,6 @@ public class MapNetworkManager : NetworkManager
             playerHealth.CompleteRevive();
         }
 
-        // 변경된 서버 씬을 Scene Interest Management에 반영합니다.
         NetworkServer.RebuildObservers(
             conn.identity,
             true
@@ -520,6 +537,7 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    // 이전 맵을 제거하고 카메라 및 입력 상태 복구
     private IEnumerator CompleteClientMapTransition(
         MapId previousMapId,
         MapId currentMapId)
@@ -556,11 +574,16 @@ public class MapNetworkManager : NetworkManager
                 localPlayer
             );
 
-            yield return RecoverClientTransition(inputReader);
+            yield return RecoverClientTransition(
+                inputReader
+            );
+
             yield break;
         }
 
-        cameraBinder.BindMapBounds(currentMapId);
+        cameraBinder.BindMapBounds(
+            currentMapId
+        );
 
         yield return mapSceneManager.UnloadClientMap(
             previousMapId
@@ -594,6 +617,7 @@ public class MapNetworkManager : NetworkManager
         );
     }
 
+    // 변경된 인벤토리를 DB에 저장
     private async Task SaveInventoryAsync(
         GameObject player,
         bool markSaved)
@@ -637,10 +661,6 @@ public class MapNetworkManager : NetworkManager
             return;
         }
 
-        /*
-         * 비동기 대기 전에 데이터를 복사하여
-         * 플레이어가 제거되어도 저장할 수 있게 합니다.
-         */
         int userId =
             accountData.UserId;
 
@@ -676,6 +696,7 @@ public class MapNetworkManager : NetworkManager
         }
     }
 
+    // 변경된 퀵슬롯을 DB에 저장
     private async Task SaveQuickSlotsAsync(
         GameObject player,
         bool markSaved)
@@ -807,14 +828,11 @@ public class MapNetworkManager : NetworkManager
                    .isLoaded;
     }
 
+    // 맵별 MonsterSpawnManager 조회 결과 캐싱
     private bool TryGetMonsterSpawnManager(
         MapId mapId,
         out MonsterSpawnManager spawnManager)
     {
-        /*
-         * 검색 결과를 캐싱해 매번 서버 씬 계층을
-         * 다시 탐색하지 않도록 합니다.
-         */
         if (monsterSpawnManagers.TryGetValue(
                 mapId,
                 out spawnManager))

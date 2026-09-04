@@ -13,10 +13,7 @@ public class LocalPlayerUIRoot : MonoBehaviour
         CollectPlayerUIs();
     }
 
-    /// <summary>
-    /// 로컬 플레이어의 Context를
-    /// 연결 대상 UI들에 전달합니다.
-    /// </summary>
+    // 로컬 플레이어 Context를 연결된 UI들에 전달
     public void Bind(LocalPlayerContext context)
     {
         if (context == null)
@@ -35,10 +32,7 @@ public class LocalPlayerUIRoot : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 연결된 UI들의 플레이어 참조와
-    /// 이벤트 구독을 해제합니다.
-    /// </summary>
+    // 연결된 UI들의 플레이어 참조 및 이벤트 구독 해제
     public void Unbind()
     {
         if (currentContext == null)
@@ -52,10 +46,7 @@ public class LocalPlayerUIRoot : MonoBehaviour
         currentContext = null;
     }
 
-    /// <summary>
-    /// LocalPlayerUIRoot 하위에서
-    /// ILocalPlayerUI를 구현한 UI만 수집합니다.
-    /// </summary>
+    // 하위에서 ILocalPlayerUI를 구현한 UI 수집
     private void CollectPlayerUIs()
     {
         playerUIs.Clear();

@@ -5,24 +5,22 @@ using UnityEngine;
 
 [RequireComponent(typeof(PlayerSkillController))]
 [RequireComponent(typeof(PlayerInventory))]
+[RequireComponent(typeof(PlayerBasicActionController))]
 public class PlayerQuickSlotController : NetworkBehaviour
 {
     private readonly Dictionary<QuickKey, QuickSlot>
         quickSlots = new();
 
-    // 클라이언트가 DB 바인딩을 실제 퀵슬롯에 복원할 때 사용합니다.
     private PlayerQuickSlotLoadData[] loadedBindings =
         Array.Empty<PlayerQuickSlotLoadData>();
 
-    // 서버가 DB 저장 시 사용하는 최신 퀵슬롯 상태입니다.
     private PlayerQuickSlotLoadData[] serverBindings =
         Array.Empty<PlayerQuickSlotLoadData>();
 
     private PlayerSkillController skillController;
     private PlayerInventory inventory;
+    private PlayerBasicActionController basicActionController;
 
-    // DB 데이터를 적용하는 동안 발생한 Bind 호출이
-    // 다시 서버로 전송되는 것을 막습니다.
     private bool isApplyingLoadedBindings;
     private bool hasUnsavedChanges;
 
@@ -49,6 +47,9 @@ public class PlayerQuickSlotController : NetworkBehaviour
         inventory =
             GetComponent<PlayerInventory>();
 
+        basicActionController =
+            GetComponent<PlayerBasicActionController>();
+
         foreach (QuickKey key in
                  Enum.GetValues(typeof(QuickKey)))
         {
@@ -60,15 +61,20 @@ public class PlayerQuickSlotController : NetworkBehaviour
     }
 
     public bool ExecuteBasicAction(
-        QuickKey key,
-        Vector2 inputDirection)
+        QuickKey key)
     {
-        return TryGetSlot(
-                   key,
-                   out QuickSlot slot) &&
-               slot.ExecuteBasicAction(
-                   inputDirection
-               );
+        if (!TryGetBinding(
+                key,
+                out QuickSlotBinding binding) ||
+            binding.Type !=
+                QuickSlotBindingType.BasicAction)
+        {
+            return false;
+        }
+
+        return basicActionController.Execute(
+            binding.BasicActionId
+        );
     }
 
     public bool ExecuteSkill(
@@ -94,12 +100,9 @@ public class PlayerQuickSlotController : NetworkBehaviour
 
     public bool BindSkill(
         QuickKey key,
-        SkillId skillId,
-        QuickSlotBindingSource source)
+        SkillId skillId)
     {
-        if ((source != QuickSlotBindingSource.SkillUI &&
-             source != QuickSlotBindingSource.DefaultActionPalette) ||
-            !TryGetSlot(
+        if (!TryGetSlot(
                 key,
                 out QuickSlot slot) ||
             !skillController.TryGetSkill(
@@ -110,11 +113,11 @@ public class PlayerQuickSlotController : NetworkBehaviour
         }
 
         slot.BindSkill(
-            skillId,
-            source
+            skillId
         );
 
         NotifyBindingsChanged();
+
         return true;
     }
 
@@ -137,29 +140,31 @@ public class PlayerQuickSlotController : NetworkBehaviour
         );
 
         NotifyBindingsChanged();
+
         return true;
     }
 
     public bool BindBasicAction(
         QuickKey key,
-        BasicActionData actionData)
+        BasicActionId actionId)
     {
-        if (actionData == null ||
-            actionData.ActionId == BasicActionId.None ||
-            actionData.Icon == null ||
-            actionData.Command == null ||
+        if (actionId == BasicActionId.None ||
             !TryGetSlot(
                 key,
-                out QuickSlot slot))
+                out QuickSlot slot) ||
+            !basicActionController.TryGetAction(
+                actionId,
+                out _))
         {
             return false;
         }
 
         slot.BindBasicAction(
-            actionData
+            actionId
         );
 
         NotifyBindingsChanged();
+
         return true;
     }
 
@@ -186,15 +191,13 @@ public class PlayerQuickSlotController : NetworkBehaviour
         );
 
         NotifyBindingsChanged();
+
         return true;
     }
 
     public bool ClearSlot(
-        QuickKey key,
-        out BasicActionData removedActionData)
+        QuickKey key)
     {
-        removedActionData = null;
-
         if (!TryGetSlot(
                 key,
                 out QuickSlot slot) ||
@@ -203,22 +206,11 @@ public class PlayerQuickSlotController : NetworkBehaviour
             return false;
         }
 
-        removedActionData =
-            slot.BasicActionData;
-
         slot.Clear();
 
         NotifyBindingsChanged();
-        return true;
-    }
 
-    public bool ClearSlot(
-        QuickKey key)
-    {
-        return ClearSlot(
-            key,
-            out _
-        );
+        return true;
     }
 
     public bool TryGetBinding(
@@ -242,68 +234,23 @@ public class PlayerQuickSlotController : NetworkBehaviour
         return true;
     }
 
-    public bool TryGetBoundSkillId(
-        QuickKey key,
-        out SkillId skillId)
+    public bool TryGetBasicActionIcon(
+        BasicActionId actionId,
+        out Sprite icon)
     {
-        skillId =
-            SkillId.None;
+        icon = null;
 
-        if (!TryGetBinding(
-                key,
-                out QuickSlotBinding binding) ||
-            binding.Type != QuickSlotBindingType.Skill)
+        if (!basicActionController.TryGetAction(
+                actionId,
+                out BasicActionData actionData))
         {
             return false;
         }
 
-        skillId =
-            binding.SkillId;
+        icon =
+            actionData.Icon;
 
-        return true;
-    }
-
-    public bool TryGetBoundConsumableId(
-        QuickKey key,
-        out ConsumableId consumableId)
-    {
-        consumableId =
-            ConsumableId.None;
-
-        if (!TryGetBinding(
-                key,
-                out QuickSlotBinding binding) ||
-            binding.Type != QuickSlotBindingType.Consumable)
-        {
-            return false;
-        }
-
-        consumableId =
-            binding.ConsumableId;
-
-        return true;
-    }
-
-    public bool TryGetBoundBasicActionData(
-        QuickKey key,
-        out BasicActionData actionData)
-    {
-        actionData = null;
-
-        if (!TryGetSlot(
-                key,
-                out QuickSlot slot) ||
-            slot.Binding.Type !=
-                QuickSlotBindingType.BasicAction ||
-            slot.BasicActionData == null)
-        {
-            return false;
-        }
-
-        actionData =
-            slot.BasicActionData;
-
-        return true;
+        return icon != null;
     }
 
     public bool TryGetSkillIcon(
@@ -353,6 +300,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
                slot.IsEmpty;
     }
 
+    // 서버의 DB 바인딩 상태 초기화
     [Server]
     public void InitializeServerBindings(
         IReadOnlyCollection<PlayerQuickSlotRecord>
@@ -387,7 +335,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
         hasUnsavedChanges = false;
     }
 
-    // DB에서 불러온 퀵슬롯 데이터를 소유 클라이언트에 전달합니다.
+    // DB 퀵슬롯 데이터를 소유 클라이언트에 전달
     [TargetRpc]
     public void TargetLoadBindings(
         NetworkConnection target,
@@ -409,7 +357,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
         hasUnsavedChanges = false;
     }
 
-    // 서버가 보관 중인 최신 상태를 DB 저장용 Record로 변환합니다.
+    // 서버 퀵슬롯 상태를 DB 저장용 Record로 변환
     [Server]
     public List<PlayerQuickSlotRecord>
         CreateSaveSnapshot()
@@ -424,7 +372,6 @@ public class PlayerQuickSlotController : NetworkBehaviour
                 new PlayerQuickSlotRecord(
                     binding.QuickKey,
                     binding.BindingType,
-                    binding.BindingSource,
                     binding.TargetId
                 )
             );
@@ -439,6 +386,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
         hasUnsavedChanges = false;
     }
 
+    // 바인딩 변경을 알리고 소유 클라이언트의 상태를 서버에 전달
     private void NotifyBindingsChanged()
     {
         hasUnsavedChanges = true;
@@ -484,9 +432,6 @@ public class PlayerQuickSlotController : NetworkBehaviour
                     BindingType =
                         (int)binding.Type,
 
-                    BindingSource =
-                        (int)binding.Source,
-
                     TargetId =
                         targetId
                 }
@@ -496,7 +441,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
         return bindings.ToArray();
     }
 
-    // 클라이언트의 현재 퀵슬롯 전체 상태를 서버에 전달합니다.
+    // 클라이언트의 현재 퀵슬롯 상태를 서버에 반영
     [Command]
     private void CmdUpdateBindings(
         PlayerQuickSlotLoadData[] bindings)
@@ -532,7 +477,7 @@ public class PlayerQuickSlotController : NetworkBehaviour
             QuickSlotBindingType.Consumable =>
                 (int)binding.ConsumableId,
 
-            _ => 0
+            _ => 0 // null이면 0으로 반환
         };
     }
 }

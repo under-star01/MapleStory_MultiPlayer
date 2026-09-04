@@ -56,11 +56,6 @@ public static class DatabaseConfig
                 UserID = user,
                 Password = password,
 
-                /*
-                 * DB와 서버가 같은 EC2의
-                 * 127.0.0.1로 통신하므로
-                 * 이번 구성에서는 TLS를 사용하지 않습니다.
-                 */
                 SslMode = MySqlSslMode.None,
 
                 ConnectionTimeout = 5
