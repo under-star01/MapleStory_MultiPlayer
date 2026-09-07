@@ -107,11 +107,3 @@ Dedicated Server는 여러 맵 Scene을 동시에 로드하여 관리하고,
 서버 및 DB 접속 정보와 같은 민감한 설정 값은 저장소에 포함하지 않습니다.
 
 ---
-
-## Documents
-
-프로젝트의 설계 과정과 주요 문제 해결 과정은 별도의 기술문서에서 확인할 수 있습니다.
-
-* **Technical Document** : 기술문서 링크
-* **Notion Portfolio** : Notion 링크
-* **Demo Video** : YouTube 링크
