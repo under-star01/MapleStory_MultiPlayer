@@ -1,7 +1,15 @@
-<p align="center">
-  <img height="300" alt="MapleStory Multiplayer Screenshot 1" src="https://github.com/user-attachments/assets/43c9fb13-df4b-4ad5-b815-0809bbc99255" />
-  <img height="300" alt="MapleStory Multiplayer Screenshot 2" src="https://github.com/user-attachments/assets/1b486fac-b971-48ba-a182-6a59f3d7b8d3" />
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img width="100%" alt="MapleStory Multiplayer Screenshot 1"
+           src="https://github.com/user-attachments/assets/3e0967c2-946c-40d3-8666-9f97e201a513" />
+    </td>
+    <td align="center">
+      <img width="100%" alt="MapleStory Multiplayer Screenshot 2"
+           src="https://github.com/user-attachments/assets/c074cb82-6c76-45f1-b05e-a7d50a56ba02" />
+    </td>
+  </tr>
+</table>
 <p align="center">
   <a href="https://youtu.be/j2gM4iNW_JY"><b>▶ MapleStory Multiplayer 플레이 영상</b></a>
 </p>
