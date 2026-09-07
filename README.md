@@ -1,6 +1,6 @@
 <p align="center">
-  <img height="240" alt="Last Attraction Screenshot 1" src="https://github.com/user-attachments/assets/cd4d39e1-2ba7-4acf-933d-69aac321ce74" />
-  <img height="240" alt="Last Attraction Screenshot 2" src="https://github.com/user-attachments/assets/42c31175-8432-4b77-ab47-07056f8752fd" />
+  <img height="300" alt="Last Attraction Screenshot 1" src="https://github.com/user-attachments/assets/cd4d39e1-2ba7-4acf-933d-69aac321ce74" />
+  <img height="300" alt="Last Attraction Screenshot 2" src="https://github.com/user-attachments/assets/42c31175-8432-4b77-ab47-07056f8752fd" />
 </p>
 
 **MapleStory Multiplayer**는 메이플스토리의 주요 플레이 요소를 참고하여
