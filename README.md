@@ -1,9 +1,6 @@
-<img width="684" height="490" alt="image" src="https://github.com/user-attachments/assets/4ec6f49d-2010-4885-a661-8e27c93075b2" /># MapleStory Multiplayer
-<img width="875" height="491" alt="image (1)" src="https://github.com/user-attachments/assets/677b7b54-57c1-4013-a7bb-3109f1d446cf" />
-
 <p align="center">
-  <img height="240" alt="https://github.com/user-attachments/assets/4ec6f49d-2010-4885-a661-8e27c93075b2" />
-  <img height="240" alt="https://github.com/user-attachments/assets/677b7b54-57c1-4013-a7bb-3109f1d446cf" />
+  <img height="240" alt="Last Attraction Screenshot 1" src="https://github.com/user-attachments/assets/cd4d39e1-2ba7-4acf-933d-69aac321ce74" />
+  <img height="240" alt="Last Attraction Screenshot 2" src="https://github.com/user-attachments/assets/42c31175-8432-4b77-ab47-07056f8752fd" />
 </p>
 
 **MapleStory Multiplayer**는 메이플스토리의 주요 플레이 요소를 참고하여
