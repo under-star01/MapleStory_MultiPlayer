@@ -7,32 +7,16 @@ using UnityEngine;
 [RequireComponent(typeof(InitialPlayerEntryController))]
 public class AccountNetworkController : MonoBehaviour
 {
-    /*
-     * 클라이언트 UI가 로그인 결과를 받습니다.
-     */
     public event Action<LoginResult, string>
         LoginResponseReceived;
 
-    /*
-     * 클라이언트 UI가 회원가입 결과를 받습니다.
-     */
     public event Action<RegisterResult>
         RegisterResponseReceived;
 
-    /*
-     * 연결별 로그인 유저 정보입니다.
-     *
-     * 이후 최초 맵 입장, 저장, 연결 종료 처리에서
-     * 해당 연결의 UserRecord를 조회할 때 사용합니다.
-     */
     private readonly Dictionary
         <NetworkConnectionToClient, UserRecord>
         connectedUsers = new();
 
-    /*
-     * 동일 계정이 다른 연결에서 다시 로그인하는 것을
-     * 막기 위한 UserId 기준 연결 정보입니다.
-     */
     private readonly Dictionary
         <int, NetworkConnectionToClient>
         loggedInConnections = new();
@@ -46,9 +30,7 @@ public class AccountNetworkController : MonoBehaviour
             GetComponent<InitialPlayerEntryController>();
     }
 
-    /*
-     * MapNetworkManager.OnStartServer()에서 호출합니다.
-     */
+    // 서버 계정 메시지 핸들러 등록
     public void StartServer()
     {
         NetworkServer.RegisterHandler
@@ -72,9 +54,6 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /*
-     * MapNetworkManager.OnStopServer()에서 호출합니다.
-     */
     public void StopServer()
     {
         NetworkServer.UnregisterHandler
@@ -87,9 +66,7 @@ public class AccountNetworkController : MonoBehaviour
         loggedInConnections.Clear();
     }
 
-    /*
-     * MapNetworkManager.OnStartClient()에서 호출합니다.
-     */
+    // 클라이언트 계정 응답 메시지 핸들러 등록
     public void StartClient()
     {
         NetworkClient.RegisterHandler
@@ -110,9 +87,6 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /*
-     * MapNetworkManager.OnStopClient()에서 호출합니다.
-     */
     public void StopClient()
     {
         NetworkClient.UnregisterHandler
@@ -122,9 +96,6 @@ public class AccountNetworkController : MonoBehaviour
             <RegisterResponseMessage>();
     }
 
-    /// <summary>
-    /// 로그인 UI에서 호출합니다.
-    /// </summary>
     public void RequestLogin(
         string loginId,
         string password)
@@ -146,9 +117,6 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 회원가입 UI에서 호출합니다.
-    /// </summary>
     public void RequestRegister(
         string loginId,
         string password,
@@ -189,6 +157,7 @@ public class AccountNetworkController : MonoBehaviour
         return false;
     }
 
+    // 로그인 요청 검증 및 최초 플레이어 입장 처리
     private async void OnServerLoginRequest(
         NetworkConnectionToClient conn,
         LoginRequestMessage message)
@@ -196,9 +165,6 @@ public class AccountNetworkController : MonoBehaviour
         if (conn == null)
             return;
 
-        /*
-         * 같은 연결에서 이미 로그인을 완료한 경우입니다.
-         */
         if (connectedUsers.ContainsKey(conn))
         {
             SendLoginResponse(
@@ -254,10 +220,7 @@ public class AccountNetworkController : MonoBehaviour
         int userId =
             loginResult.User.UserId;
 
-        /*
-         * 다른 연결에서 같은 UserId가
-         * 이미 로그인했는지 검사합니다.
-         */
+        // 동일 계정의 중복 로그인 방지
         if (loggedInConnections.TryGetValue(
                 userId,
                 out NetworkConnectionToClient
@@ -279,10 +242,6 @@ public class AccountNetworkController : MonoBehaviour
                 return;
             }
 
-            /*
-             * 비정상 종료 등으로 남은 오래된 정보라면
-             * 제거하고 로그인을 진행합니다.
-             */
             loggedInConnections.Remove(userId);
         }
 
@@ -317,6 +276,7 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
+    // 회원가입 요청 처리
     private async void OnServerRegisterRequest(
         NetworkConnectionToClient conn,
         RegisterRequestMessage message)
@@ -361,10 +321,7 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /*
-     * 서버 시작 직후 DB 초기화가 끝나지 않았다면
-     * 완료될 때까지 기다린 뒤 서비스를 반환합니다.
-     */
+    // DB 초기화 완료 후 계정 서비스 반환
     private async Task<UserAccountService>
         GetAccountServiceAsync(
             NetworkConnectionToClient conn)
@@ -489,9 +446,6 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 서버에서 해당 연결의 로그인 유저를 조회합니다.
-    /// </summary>
     [Server]
     public bool TryGetUser(
         NetworkConnectionToClient conn,
@@ -503,10 +457,7 @@ public class AccountNetworkController : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// 로그인한 유저의 마지막 맵과 스폰 지점을
-    /// DB에 저장합니다.
-    /// </summary>
+    // 마지막 맵과 스폰 위치를 DB에 저장
     [Server]
     public async void SaveLastLocation(
         NetworkConnectionToClient conn,
@@ -565,10 +516,6 @@ public class AccountNetworkController : MonoBehaviour
         }
         catch (Exception exception)
         {
-            /*
-             * 이미 맵 이동은 완료된 상태이므로
-             * 저장 실패 때문에 이동을 취소하지 않습니다.
-             */
             Debug.LogError(
                 $"[Account] 마지막 위치 저장 실패 / " +
                 $"UserId: {user.UserId}, " +
@@ -580,9 +527,7 @@ public class AccountNetworkController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 연결 종료 시 로그인 정보를 제거합니다.
-    /// </summary>
+    // 연결 종료 시 로그인 정보 제거
     [Server]
     public void RemoveConnection(
         NetworkConnectionToClient conn)
@@ -594,9 +539,6 @@ public class AccountNetworkController : MonoBehaviour
                 conn,
                 out UserRecord user))
         {
-            /*
-             * 같은 UserId의 현재 연결일 때만 제거합니다.
-             */
             if (loggedInConnections.TryGetValue(
                     user.UserId,
                     out NetworkConnectionToClient

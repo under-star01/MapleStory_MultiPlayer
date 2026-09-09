@@ -9,12 +9,7 @@ public static class PasswordHasher
 
     private const char Separator = ':';
 
-    /// <summary>
-    /// 입력받은 비밀번호를 PBKDF2로 해시합니다.
-    ///
-    /// 저장 형식:
-    /// 반복 횟수:Salt:Hash
-    /// </summary>
+    // PBKDF2를 사용해 비밀번호 해시 생성
     public static string HashPassword(
         string password)
     {
@@ -57,9 +52,7 @@ public static class PasswordHasher
         );
     }
 
-    /// <summary>
-    /// 입력한 비밀번호가 저장된 해시와 일치하는지 확인합니다.
-    /// </summary>
+    // 입력 비밀번호와 저장된 해시 비교
     public static bool VerifyPassword(
         string password,
         string storedPasswordHash)
@@ -124,10 +117,7 @@ public static class PasswordHasher
         );
     }
 
-    /// <summary>
-    /// 비교 도중 어느 위치에서 값이 달랐는지가
-    /// 실행 시간에 드러나지 않도록 전체 바이트를 비교합니다.
-    /// </summary>
+    // 실행 시간 차이를 줄이기 위해 전체 바이트 비교
     private static bool FixedTimeEquals(
         byte[] left,
         byte[] right)

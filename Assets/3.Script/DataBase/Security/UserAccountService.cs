@@ -41,10 +41,7 @@ public class UserAccountService
             );
     }
 
-    /// <summary>
-    /// 회원가입 입력값을 검증하고
-    /// 신규 유저를 생성합니다.
-    /// </summary>
+    // 회원가입 입력값 검증 후 신규 유저 생성
     public async Task<RegisterResult>
         RegisterAsync(
             string loginId,
@@ -156,6 +153,7 @@ public class UserAccountService
                nickname.Length <= 20;
     }
 
+    // 로그인 정보 검증 후 유저 데이터 반환
     public async Task<LoginServiceResult> LoginAsync(
         string loginId,
         string password)

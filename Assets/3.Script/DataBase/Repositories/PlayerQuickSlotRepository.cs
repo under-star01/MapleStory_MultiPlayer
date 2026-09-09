@@ -25,7 +25,6 @@ public class PlayerQuickSlotRepository
             SELECT
                 quick_key,
                 binding_type,
-                binding_source,
                 target_id
             FROM player_quickslots
             WHERE user_id = @userId
@@ -57,7 +56,6 @@ public class PlayerQuickSlotRepository
                 new PlayerQuickSlotRecord(
                     reader.GetInt32("quick_key"),
                     reader.GetInt32("binding_type"),
-                    reader.GetInt32("binding_source"),
                     reader.GetInt32("target_id")
                 )
             );
@@ -148,7 +146,6 @@ public class PlayerQuickSlotRepository
                 user_id,
                 quick_key,
                 binding_type,
-                binding_source,
                 target_id
             )
             VALUES
@@ -156,7 +153,6 @@ public class PlayerQuickSlotRepository
                 @userId,
                 @quickKey,
                 @bindingType,
-                @bindingSource,
                 @targetId
             );
             ";
@@ -192,11 +188,6 @@ public class PlayerQuickSlotRepository
             command.Parameters.AddWithValue(
                 "@bindingType",
                 record.BindingType
-            );
-
-            command.Parameters.AddWithValue(
-                "@bindingSource",
-                record.BindingSource
             );
 
             command.Parameters.AddWithValue(

@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 8882072951341120682}
   - component: {fileID: 1764234220800607801}
   - component: {fileID: 5726701553201237585}
+  - component: {fileID: 619466958276800338}
   - component: {fileID: 2949302589284177834}
   - component: {fileID: 3761611756670745891}
   - component: {fileID: 4844357769319987438}
@@ -382,14 +383,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSkillController
   defaultSkills:
-  - skillId: 1000
-    icon: {fileID: 2996372737008752148, guid: 3f1363b767cfc49418e90fc6e7144e43, type: 3}
   - skillId: 1001
     icon: {fileID: 4900108452143912752, guid: 9ba502b57a0eae8499226dcbbac91238, type: 3}
+  - skillId: 1000
+    icon: {fileID: 21300000, guid: c9ae39a3e52af4e4b8a71ef3e6481d47, type: 3}
   - skillId: 1002
     icon: {fileID: 5503881086884958086, guid: d4c3999a82ccaa040b57a7983b5fa1e9, type: 3}
   - skillId: 1003
     icon: {fileID: 21300000, guid: 7e602d891755a2b448398671d7dff63c, type: 3}
+  - skillId: 1004
+    icon: {fileID: 21300000, guid: 9c8ef6c1a1c456b4d8a2235df97e1eca, type: 3}
 --- !u!114 &5726701553201237585
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -402,11 +405,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50dc89cd8296d82409baeb68d598c903, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerQuickSlotController
-  defaultSkillBindings:
-  - key: 41
-    skillId: 1002
-  - key: 35
-    skillId: 1003
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &619466958276800338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301701852553229459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7344ea3175df4c74e97cbf3514a97f23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBasicActionController
 --- !u!114 &2949302589284177834
 MonoBehaviour:
   m_ObjectHideFlags: 0

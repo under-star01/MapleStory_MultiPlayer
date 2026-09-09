@@ -16,10 +16,6 @@ public class DatabaseManager : MonoBehaviour
         private set;
     }
 
-    /*
-     * 유저 데이터는 전체 캐싱하지 않습니다.
-     * 로그인·회원가입 시 필요한 유저만 DB에서 조회합니다.
-     */
     public UserRepository UserRepository
     {
         get;
@@ -37,7 +33,6 @@ public class DatabaseManager : MonoBehaviour
         get;
         private set;
     }
-
 
     public PlayerQuickSlotRepository PlayerQuickSlotRepository
     {
@@ -89,6 +84,7 @@ public class DatabaseManager : MonoBehaviour
         _ = InitializeAsync();
     }
 
+    // DB Repository 생성 및 공통 정적 데이터 초기화
     private async Task InitializeAsync()
     {
         try
@@ -97,9 +93,6 @@ public class DatabaseManager : MonoBehaviour
                 DatabaseConfig
                     .CreateConnectionString();
 
-            /*
-             * 공통 정적 데이터 Repository
-             */
             MonsterRepository monsterRepository =
                 new MonsterRepository(
                     connectionString
@@ -115,12 +108,6 @@ public class DatabaseManager : MonoBehaviour
                     connectionString
                 );
 
-            /*
-             * 유저 데이터 Repository와 Service
-             *
-             * 유저 데이터는 서버 시작 시 전체 조회하지 않고,
-             * 회원가입·로그인 시 필요한 유저만 조회합니다.
-             */
             UserRepository userRepository =
                 new UserRepository(
                     connectionString
@@ -168,11 +155,7 @@ public class DatabaseManager : MonoBehaviour
                 monsterDrops
             );
 
-            /*
-             * 모든 초기화가 성공한 뒤 공개합니다.
-             * 초기화 도중 오류가 나면 외부 시스템이
-             * 불완전한 Repository를 사용하지 않습니다.
-             */
+            // 모든 초기화가 성공한 뒤 외부에 Repository 공개
             UserRepository =
                 userRepository;
 

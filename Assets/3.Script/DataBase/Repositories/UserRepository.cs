@@ -13,10 +13,7 @@ public class UserRepository
             connectionString;
     }
 
-    /// <summary>
-    /// 로그인 아이디로 유저 한 명을 조회합니다.
-    /// 존재하지 않으면 null을 반환합니다.
-    /// </summary>
+    // 로그인 아이디로 유저 조회
     public async Task<UserRecord>
         FindByLoginIdAsync(
             string loginId)
@@ -65,9 +62,6 @@ public class UserRepository
         );
     }
 
-    /// <summary>
-    /// 동일한 로그인 아이디가 존재하는지 확인합니다.
-    /// </summary>
     public async Task<bool> IsLoginIdTakenAsync(
         string loginId)
     {
@@ -104,9 +98,6 @@ public class UserRepository
         return Convert.ToInt32(result) == 1;
     }
 
-    /// <summary>
-    /// 동일한 닉네임이 존재하는지 확인합니다.
-    /// </summary>
     public async Task<bool> IsNicknameTakenAsync(
         string nickname)
     {
@@ -143,10 +134,7 @@ public class UserRepository
         return Convert.ToInt32(result) == 1;
     }
 
-    /// <summary>
-    /// 신규 유저를 생성하고 발급된 user_id를 반환합니다.
-    /// passwordHash에는 이미 해시된 값이 전달되어야 합니다.
-    /// </summary>
+    // 신규 유저 생성 후 발급된 UserId 반환
     public async Task<int> CreateUserAsync(
         string loginId,
         string passwordHash,
@@ -203,10 +191,7 @@ public class UserRepository
         return Convert.ToInt32(result);
     }
 
-    /// <summary>
-    /// 유저가 마지막으로 도착한 맵과
-    /// 스폰 지점을 저장합니다.
-    /// </summary>
+    // 유저의 마지막 맵과 스폰 위치 저장
     public async Task UpdateLastLocationAsync(
         int userId,
         string lastMapId,

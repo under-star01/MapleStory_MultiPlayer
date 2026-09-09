@@ -25,10 +25,8 @@ public sealed class StaticGameDataCache
         private set;
     }
 
-    /// <summary>
     /// DB에서 읽은 몬스터 데이터를
-    /// 서버 메모리 캐시에 저장합니다.
-    /// </summary>
+    /// 서버 메모리 캐시에 저장
     public void SetMonsters(
         IEnumerable<MonsterRecord> records)
     {

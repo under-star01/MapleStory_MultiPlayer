@@ -14,8 +14,9 @@ public class MonsterMovement : NetworkBehaviour
     [Header("Movement")]
     [SerializeField]
     private float moveSpeed = 1.2f;
+
     public float MoveSpeed =>
-    moveSpeed;
+        moveSpeed;
 
     [SerializeField]
     private float minMoveTime = 0.7f;
@@ -130,26 +131,30 @@ public class MonsterMovement : NetworkBehaviour
         );
 
         patrolCoroutine =
-            StartCoroutine(Patrol());
+            StartCoroutine(
+                Patrol()
+            );
     }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
 
-        /*
-         * 원격 클라이언트는 물리를 직접 계산하지 않고
-         * NetworkTransform의 결과만 표시합니다.
-         */
         if (!isServer)
         {
             rigidBody.simulated = false;
         }
 
-        ApplyDirection(moveDirection);
-        ApplyMoving(isMoving);
+        ApplyDirection(
+            moveDirection
+        );
+
+        ApplyMoving(
+            isMoving
+        );
     }
 
+    // 대기와 이동을 반복하며 순찰
     [Server]
     private IEnumerator Patrol()
     {
@@ -166,20 +171,12 @@ public class MonsterMovement : NetworkBehaviour
 
             ChooseMoveDirection();
 
-            /*
-             * 선택한 방향에 바닥이 없다면
-             * 반대 방향으로 바꿉니다.
-             */
             if (!HasGroundAhead())
             {
                 SetMoveDirection(
                     -moveDirection
                 );
 
-                /*
-                 * 반대 방향에도 바닥이 없다면
-                 * 이번 이동을 취소합니다.
-                 */
                 if (!HasGroundAhead())
                     continue;
             }
@@ -212,7 +209,8 @@ public class MonsterMovement : NetworkBehaviour
                 elapsedTime +=
                     Time.fixedDeltaTime;
 
-                yield return new WaitForFixedUpdate();
+                yield return
+                    new WaitForFixedUpdate();
             }
         }
 
@@ -220,13 +218,10 @@ public class MonsterMovement : NetworkBehaviour
         patrolCoroutine = null;
     }
 
+    // 공격 대상과 지형 상태를 기준으로 다음 이동 방향 선택
     [Server]
     private void ChooseMoveDirection()
     {
-        /*
-         * 플랫폼 끝에서 멈춘 경우에는
-         * 안전한 반대 방향을 우선합니다.
-         */
         if (forcedNextDirection != 0)
         {
             SetMoveDirection(
@@ -237,10 +232,6 @@ public class MonsterMovement : NetworkBehaviour
             return;
         }
 
-        /*
-         * 피격 후에는 마지막 공격자 방향을
-         * 다음 이동 방향으로 선택합니다.
-         */
         if (isAttackMode &&
             attackTarget != null)
         {
@@ -272,9 +263,7 @@ public class MonsterMovement : NetworkBehaviour
         isAttackMode = true;
     }
 
-    /// <summary>
-    /// 피격 애니메이션이 재생되는 동안 잠시 이동을 중단합니다.
-    /// </summary>
+    // 피격 중 이동 정지
     [Server]
     public void OnHit()
     {
@@ -299,11 +288,7 @@ public class MonsterMovement : NetworkBehaviour
         isHit = false;
     }
 
-    /// <summary>
-    /// MonsterHealth가 사망을 결정한 순간 호출합니다.
-    /// 현재 위치에서 모든 물리 이동을 멈춥니다.
-    /// </summary>
-
+    // 사망 시 순찰 및 물리 이동 정지
     [Server]
     public void OnDeath()
     {
@@ -333,6 +318,7 @@ public class MonsterMovement : NetworkBehaviour
             RigidbodyType2D.Kinematic;
     }
 
+    // 진행 방향 앞쪽의 바닥 존재 여부 확인
     [Server]
     private bool HasGroundAhead()
     {
@@ -361,18 +347,21 @@ public class MonsterMovement : NetworkBehaviour
 
         if (moveDirection == newDirection)
         {
-            ApplyDirection(newDirection);
+            ApplyDirection(
+                newDirection
+            );
+
             UpdateFrontGroundCheckPosition();
             return;
         }
 
-        moveDirection = newDirection;
+        moveDirection =
+            newDirection;
 
-        /*
-         * 호스트 화면은 즉시 적용하고,
-         * 원격 클라이언트는 SyncVar Hook으로 적용합니다.
-         */
-        ApplyDirection(moveDirection);
+        ApplyDirection(
+            moveDirection
+        );
+
         UpdateFrontGroundCheckPosition();
     }
 
@@ -397,7 +386,10 @@ public class MonsterMovement : NetworkBehaviour
         int previousDirection,
         int newDirection)
     {
-        ApplyDirection(newDirection);
+        ApplyDirection(
+            newDirection
+        );
+
         UpdateFrontGroundCheckPosition();
     }
 
@@ -414,10 +406,12 @@ public class MonsterMovement : NetworkBehaviour
     }
 
     private void OnMovingChanged(
-    bool previousValue,
-    bool newValue)
+        bool previousValue,
+        bool newValue)
     {
-        ApplyMoving(newValue);
+        ApplyMoving(
+            newValue
+        );
     }
 
     private void ApplyMoving(
@@ -447,29 +441,24 @@ public class MonsterMovement : NetworkBehaviour
     {
         if (isMoving == value)
         {
-            /*
-             * 호스트 화면에서 현재 값이 이미 같더라도
-             * Animator 상태는 확실히 맞춥니다.
-             */
             if (isClient)
             {
-                ApplyMoving(value);
+                ApplyMoving(
+                    value
+                );
             }
 
             return;
         }
 
-        isMoving = value;
+        isMoving =
+            value;
 
-        /*
-         * 호스트는 서버와 클라이언트가 같은 오브젝트이므로
-         * 즉시 화면에 적용합니다.
-         *
-         * 원격 클라이언트는 SyncVar Hook에서 적용됩니다.
-         */
         if (isClient)
         {
-            ApplyMoving(value);
+            ApplyMoving(
+                value
+            );
         }
     }
 
@@ -514,7 +503,7 @@ public class MonsterMovement : NetworkBehaviour
     }
 
     public void ApplyMoveSpeed(
-    float value)
+        float value)
     {
         if (value < 0f)
             return;
